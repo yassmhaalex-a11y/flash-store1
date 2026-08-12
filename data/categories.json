@@ -1,0 +1,5 @@
+[
+ {"id":1,"name":"Fortnite","description":"V-Bucks واشتراكات ومنتجات Fortnite","image":"","active":true},
+ {"id":2,"name":"FIFA","description":"منتجات وعروض FIFA","image":"","active":true},
+ {"id":3,"name":"Gift Cards","description":"بطاقات رقمية متنوعة","image":"","active":true}
+]

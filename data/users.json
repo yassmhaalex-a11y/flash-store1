@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1786534469376,
+    "email": "yassmha.alex@gmail.com",
+    "name": "Yassin Hassan",
+    "phone": "201275775434",
+    "passwordHash": "5d5834a5fa9c12f385e85d5236e7d54d471b8540c0e52ecff3f871bd79d64691c07c42af68752ad7ac95e2a84268376a119c78005e37dc200cc7fe3a44c3600d",
+    "passwordSalt": "b855047ee011633b8fae1be60181b030",
+    "createdAt": "2026-08-12T11:34:29.376Z",
+    "status": "active"
+  }
+]

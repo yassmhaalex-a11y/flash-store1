@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "code": "FLASH10",
+    "type": "percent",
+    "value": 10,
+    "active": true,
+    "minTotal": 0
+  }
+]

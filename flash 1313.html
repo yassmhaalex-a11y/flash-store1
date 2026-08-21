@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Store - متجرك الرقمي للألعاب</title>
+    <!-- أيقونات الموقع -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: #1f2833;
+            --primary-color: #ff003c; /* الأحمر النيون من اللوجو */
+            --secondary-color: #ffb703; /* الأصفر النيون من اللوجو */
+            --text-color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        /* شريط العروض العلوي المتحرك */
+        .promo-bar {
+            background: linear-gradient(90deg, var(--primary-color), #7b2cbf);
+            color: #fff;
+            text-align: center;
+            padding: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="promo-bar">العروض الأقوى والأسعار الأفضل 🔥 كود الخصم الحالي: FLASH5</div>
+    <!-- تصاميم الهيدر وشريط البحث -->
+    <style>
+        header {
+            background-color: #020205;
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--secondary-color);
+            background: none;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .logo-text span {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 500px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border-radius: 25px;
+            border: 1px solid #333;
+            background-color: #111;
+            color: #fff;
+            outline: none;
+        }
+
+        .search-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-icon-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .nav-icon-btn:hover {
+            color: var(--secondary-color);
+        }
+
+        .nav-icon-btn .badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background-color: var(--primary-color);
+            color: #fff;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 50%;
+        }
+    </style>
+
+    <!-- الهيكل الفعلي للهيدر -->
+    <header>
+        <div class="nav-right">
+            <button class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i> <span>كتيجوري</span></button>
+            <div class="logo-text">FLASH <span>STORE</span></div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" placeholder="ابحث عن ألعابك، فيبوكس، شدات...">
+            <i class="fas fa-search"></i>
+        </div>
+
+        <div class="nav-icons">
+            <button class="nav-icon-btn" title="تسجيل الدخول"><i class="fas fa-sign-in-alt"></i></button>
+            <button class="nav-icon-btn" title="المفضلة"><i class="far fa-heart"></i><span class="badge">0</span></button>
+            <button class="nav-icon-btn" title="سلة المشتريات"><i class="fas fa-shopping-cart"></i><span class="badge" id="cart-count">0</span></button>
+        </div>
+    </header>
+    <!-- تصاميم القائمة الجانبية والسلايدر الإعلاني -->
+    <style>
+        /* القائمة الجانبية المنبثقة */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background-color: #0f1016;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            z-index: 2000;
+            transition: 0.4s ease;
+            padding: 25px;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .close-sidebar {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar-menu li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            display: block;
+            padding: 10px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu li a:hover {
+            background-color: var(--primary-color);
+            padding-right: 15px;
+        }
+
+        /* السلايدر وقائمة الأقسام الجانبية للكمبيوتر */
+        .hero-wrapper {
+            display: flex;
+            gap: 20px;
+            padding: 30px 5%;
+        }
+
+        .side-categories-box {
+            width: 250px;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+
+        .side-categories-box h3 {
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+        }
+
+        .side-cat-list {
+            list-style: none;
+        }
+
+        .side-cat-list li a {
+            color: #eee;
+            text-decoration: none;
+            padding: 10px 5px;
+            display: block;
+            border-bottom: 1px solid #2b3542;
+            transition: 0.2s;
+        }
+
+        .side-cat-list li a:hover {
+            color: var(--primary-color);
+            transform: translateX(-5px);
+        }
+
+        .slider-container {
+            flex: 1;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            border: 2px solid #222;
+        }
+
+        .slides {
+            width: 100%;
+            height: 100%;
+            display: flex;
+        }
+
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            padding: 50px;
+        }
+
+        .slide-content {
+            background: rgba(0, 0, 0, 0.75);
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 450px;
+            border-right: 4px solid var(--primary-color);
+        }
+
+        .slide-content h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .slide-content p {
+            font-size: 15px;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+
+        .slide-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .slide-btn:hover {
+            background-color: var(--secondary-color);
+            color: #000;
+        }
+
+        @media (max-width: 992px) {
+            .side-categories-box { display: none; }
+        }
+    </style>
+
+    <!-- الهيكل الفعلي للقائمة والسلايدر -->
+    <div class="sidebar" id="categoriesSidebar">
+        <div class="sidebar-header">
+            <h3>جميع الأقسام</h3>
+            <i class="fas fa-times close-sidebar" onclick="toggleSidebar()"></i>
+        </div>
+        <ul class="sidebar-menu" id="sidebarCatList">
+            <li><a href="#">فيبوكس فورتنايت</a></li>
+            <li><a href="#">ألعاب إكس بوكس</a></li>
+            <li><a href="#">ألعاب بلايستيشن</a></li>
+            <li><a href="#">بطاقات ستيم رقمية</a></li>
+            <li><a href="#">اشتراكات جيم باس</a></li>
+        </ul>
+    </div>
+
+    <div class="hero-wrapper">
+        <div class="side-categories-box">
+            <h3>التصنيفات</h3>
+            <ul class="side-cat-list" id="mainCatList">
+                <li><a href="#">فيبوكس فورتنايت</a></li>
+                <li><a href="#">ألعاب إكس بوكس</a></li>
+                <li><a href="#">ألعاب بلايستيشن</a></li>
+                <li><a href="#">بطاقات ستيم رقمية</a></li>
+                <li><a href="#">اشتراكات جيم باس</a></li>
+            </ul>
+        </div>
+
+        <div class="slider-container">
+            <div class="slides" id="heroSlides">
+                <div class="slide" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://unsplash.com');">
+                    <div class="slide-content">
+                        <h2>قراند 6 الحجز المسبق!</h2>
+                        <p>احجز نسختك الرسمية والخاصة الآن من GTA VI بأسعار لا تقبل المنافسة مع التسليم الفوري فور الإطلاق.</p>
+                        <button class="slide-btn" onclick="openCheckout('GTA VI Pre-order')">اطلبها الآن</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- تصاميم أقسام عرض المنتجات والكروت -->
+    <style>
+        section {
+            padding: 40px 5%;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-right: 4px solid var(--primary-color);
+            padding-right: 15px;
+        }
+
+        /* سلايدر المنتجات المميزة بالأسهم */
+        .carousel-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .product-carousel {
+            display: flex;
+            gap: 20px;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .arrow-btn {
+            background-color: rgba(0,0,0,0.7);
+            border: 1px solid var(--primary-color);
+            color: white;
+            font-size: 20px;
+            padding: 15px;
+            cursor: pointer;
+            position: absolute;
+            z-index: 10;
+            border-radius: 50%;
+        }
+
+        .arrow-left { left: -20px; }
+        .arrow-right { right: -20px; }
+
+        /* شبكة المنتجات الجديدة */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 25px;
+        }
+
+        /* كرت المنتج الاحترافي */
+        .product-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #2b3542;
+            transition: 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(255,0,60,0.2);
+            border-color: var(--primary-color);
+        }
+
+        .badge-new {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 5px;
+            z-index: 5;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+            background-color: #111;
+        }
+
+        .product-info {
+            padding: 15px;
+            text-align: right;
+        }
+
+        .product-info h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .variant-select {
+            width: 100%;
+            padding: 8px;
+            background-color: #0b0c10;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .price-buy {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-price {
+            font-weight: bold;
+            color: var(--secondary-color);
+            font-size: 18px;
+        }
+
+        .buy-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .buy-btn:hover {
+            background-color: var(--secondary-color);
+            color: #000;
+        }
+    </style>
+
+    <!-- الهيكل الفعلي لأقسام المنتجات -->
+    <section>
+        <div class="section-title">
+            <h3>Featured Products (منتجات مميزة)</h3>
+        </div>
+        <div class="carousel-wrapper">
+            <button class="arrow-btn arrow-left" onclick="scrollCarousel(-1)"><i class="fas fa-chevron-left"></i></button>
+            <div class="product-carousel" id="featuredContainer">
+                <!-- المنتجات يتم تحميلها تلقائياً بالـ JavaScript -->
+            </div>
+            <button class="arrow-btn arrow-right" onclick="scrollCarousel(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-title">
+            <h3>Newly Added Products (أضيف حديثاً)</h3>
+        </div>
+        <div class="products-grid" id="newlyAddedContainer">
+            <!-- أحدث الألعاب تظهر تلقائياً هنا -->
+        </div>
+    </section>
+    <!-- تصاميم أزرار المنصات ونافذة الدفع واللوحة -->
+    <style>
+        .buttons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .platform-btn, .discover-item-btn {
+            background: linear-gradient(135deg, #1f2833, #0f141c);
+            border: 1px solid #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .platform-btn:hover, .discover-item-btn:hover {
+            border-color: var(--secondary-color);
+            background: linear-gradient(135deg, #2c3b4e, #1f2833);
+            transform: scale(1.05);
+            color: var(--secondary-color);
+        }
+
+        .platform-btn i, .discover-item-btn i {
+            font-size: 28px;
+        }
+
+        /* نافذة الدفع والتأكيد (Modal) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            border: 2px solid var(--primary-color);
+            position: relative;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+            text-align: center;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 22px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #0b0c10;
+            color: white;
+            outline: none;
+        }
+
+        .payment-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pay-option {
+            flex: 1;
+            padding: 12px 5px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #0b0c10;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .pay-option.selected {
+            border-color: var(--secondary-color);
+            background-color: rgba(255, 183, 3, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .checkout-submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .success-box {
+            text-align: center;
+            display: none;
+        }
+
+        .success-box i {
+            font-size: 50px;
+            color: #2a9d8f;
+            margin-bottom: 15px;
+        }
+
+        /* لوحة التحكم المدمجة */
+        .admin-trigger {
+            background-color: #222;
+            color: #777;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 50px;
+        }
+
+        .admin-panel {
+            background-color: #11141a;
+            border-top: 4px solid var(--secondary-color);
+            display: none;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .admin-card {
+            background-color: #1f2833;
+            padding: 25px;
+            border-radius: 8px;
+        }
+
+        .admin-card h4 {
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+        }
+
+        .admin-card input, .admin-card select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #000;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+        }
+    </style>
+
+    <!-- الهيكل الفعلي للمنصات والدفع واللوحة -->
+    <section>
+        <div class="section-title">
+            <h3>Discover by Platforms</h3>
+        </div>
+        <div class="buttons-container">
+            <a href="#" class="platform-btn"><i class="fab fa-xbox" style="color: #107c10;"></i>XBOX</a>
+            <a href="#" class="platform-btn"><i class="fab fa-playstation" style="color: #003087;"></i>PLAYSTATION</a>
+            <a href="#" class="platform-btn"><i class="fab fa-steam" style="color: #00adee;"></i>STEAM</a>
+        </div>
+    </section>
+
+    <section>
+        <div class="section-title">
+            <h3>Discover by Products</h3>
+        </div>
+        <div class="buttons-container">
+            <button class="discover-item-btn"><i class="fas fa-coins"></i>عملات رقمية / فيبوكس</button>
+            <button class="discover-item-btn"><i class="fas fa-gamepad"></i>حسابات ألعاب كاملة</button>
+            <button class="discover-item-btn"><i class="fas fa-id-card"></i>كروت وإكسسوارات شحن</button>
+        </div>
+    </section>
+
+    <!-- نافذة تأكيد الطلب -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <i class="fas fa-times close-modal" onclick="closeModal()"></i>
+            
+            <div id="formStage">
+                <h3>تأكيد طلب الشراء</h3>
+                <div class="form-group">
+                    <label>الاسم كامل (Your Name)</label>
+                    <input type="text" id="custName" placeholder="اكتب اسمك الثلاثي">
+                </div>
+                <div class="form-group">
+                    <label>رقم التليفون (Phone Number)</label>
+                    <input type="text" id="custPhone" placeholder="رقم متاح عليه واتساب">
+                </div>
+                <div class="form-group">
+                    <label>اختر طريقة الدفع (نظام حجز فقط)</label>
+                    <div class="payment-options">
+                        <div class="pay-option" onclick="selectPayment(this, 'Vodafone Cash')">Vodafone Cash</div>
+                        <div class="pay-option" onclick="selectPayment(this, 'Telda')">Telda</div>
+                        <div class="pay-option" onclick="selectPayment(this, 'InstaPay')">InstaPay</div>
+                    </div>
+                </div>
+                <button class="checkout-submit-btn" onclick="submitOrder()">تأكيد وإتمام الطلب 🚀</button>
+            </div>
+
+            <div class="success-box" id="successStage">
+                <i class="fas fa-check-circle"></i>
+                <h2>تم تسجيل طلبك!</h2>
+                <p style="margin: 15px 0; font-size: 16px;">رقم الأوردر الفريد الخاص بك هو: <strong id="orderIdText" style="color: var(--secondary-color);"></strong></p>
+                <p style="color: #ccc; font-size: 14px; line-height: 1.5;">سيتم التواصل معك فوراً من قبل فريق الدعم الفني عبر الواتساب لتسليم منتجك الرقمي.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- لوحة تحكم الأدمن -->
+    <div class="admin-trigger" onclick="toggleAdminPanel()">🔒 دخول لوحة تحكم الأدمن لـ Flash Store الخاصة بك (اضغط هنا للفتح والتحكم)</div>
+    <div class="admin-panel" id="adminPanelArea">
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h4>إضافة فئة كتيجوري جديدة</h4>
+                <input type="text" id="newCatName" placeholder="اسم الكتيجوري الجديد">
+                <button class="buy-btn" style="width: 100%;" onclick="addNewCategory()">إضافة الفئة للموقع</button>
+            </div>
+            <div class="admin-card">
+                <h4>إطلق منتج جديد بالكامل للواجهة</h4>
+                <input type="text" id="newProdName" placeholder="اسم اللعبة أو المنتج">
+                <input type="text" id="newProdPrice" placeholder="السعر الافتراضي بالجنية">
+                <select id="newProdSection">
+                    <option value="featured">Featured Products</option>
+                    <option value="new">Newly Added Products</option>
+                </select>
+                <button class="buy-btn" style="width: 100%;" onclick="addNewProductFromAdmin()">إضافة وبث المنتج فورا</button>
+            </div>
+            <div class="admin-card">
+                <h4>جدول استلام الأوردات والإشعارات الفورية</h4>
+                <div style="max-height: 150px; overflow-y: auto; font-size: 13px;" id="adminOrdersLog">
+                    <p style="color: #888;">لا توجد طلبات جديدة حتى اللحظة...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- تصاميم الفوتر النهائي -->
+    <style>
+        footer {
+            background-color: #030307;
+            padding: 50px 5% 20px 5%;
+            border-top: 1px solid #222;
+            margin-top: 50px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr repeat(3, 1fr);
+            gap: 40px;
+        }
+
+        .footer-col h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .footer-col p {
+            line-height: 1.6;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-col ul li a {
+            color: #aaa;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .footer-col ul li a:hover {
+            color: var(--secondary-color);
+            padding-right: 5px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            margin-top: 40px;
+            border-top: 1px solid #222;
+            font-size: 13px;
+            color: #666;
+        }
+
+        @media (max-width: 992px) {
+            .footer-grid { grid-template-columns: 1fr; gap: 30px; }
+        }
+    </style>
+
+    <!-- الفوتر الفعلي والشروحات -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h3>About Us</h3>
+                <p>Welcome to Flash Store — your trusted destination for digital gaming products, offering the best prices and fastest delivery. We specialize in Xbox, PlayStation, and PC digital content, including full accounts, shared accounts, Game Pass and PlayStation Plus subscriptions, Steam games, V-Bucks, and activation codes — all 100% legitimate and sourced from trusted suppliers. Our mission is simple: to make gaming easier, faster, and more affordable for every player. We take pride in our reputation for reliability, transparency, and professional after-sales support. At Flash Store, we don’t just sell games — we build trust, offer genuine value, and bring you the smoothest digital experience possible. Your game starts here.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#">Homepage</a></li>
+                    <li><a href="#">All Products</a></li>
+                    <li><a href="#">Cart</a></li>
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">About Us</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Customer Service</h3>
+                <ul>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Help</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Legal</h3>
+                <ul>
+                    <li><a href="#">Terms of use</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Returns Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Flash Store. All Rights Reserved. Designed Specially for you.
+        </div>
+    </footer>
+    <!-- البرمجة الذكية للموقع (JavaScript) وقفل الملف -->
+    <script>
+        // قاعدة بيانات المنتجات الافتراضية داخل الموقع
+        let products = [
+            { id: 1, name: '1000 V-Bucks فورتنايت', basePrice: 250, type: 'featured', img: 'url("https://unsplash.com")' },
+            { id: 2, name: 'EA FC 26 Xbox (حساب مشترك)', basePrice: 450, type: 'featured', img: 'url("https://unsplash.com")' },
+            { id: 3, name: 'بلايستيشن بلس 3 أشهر', basePrice: 890, type: 'featured', img: 'url("https://unsplash.com")' },
+            { id: 4, name: 'سبايدرمان 2 PS5 كامل', basePrice: 1200, type: 'new', img: 'url("https://unsplash.com")' },
+            { id: 5, name: 'جيم باس التيميت شهر', basePrice: 190, type: 'new', img: 'url("https://unsplash.com")' }
+        ];
+
+        let selectedPaymentMethod = '';
+        let currentTargetProduct = '';
+        let cartItemsCount = 0;
+
+        // تحميل وعرض الكروت والخيارات ديناميكياً
+        function initShop() {
+            const featuredContainer = document.getElementById('featuredContainer');
+            const newlyAddedContainer = document.getElementById('newlyAddedContainer');
+            
+            featuredContainer.innerHTML = '';
+            newlyAddedContainer.innerHTML = '';
+
+            products.forEach(p => {
+                let card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <div>
+                        ${p.type === 'new' ? '<div class="badge-new">جديد 🔥</div>' : ''}
+                        <div class="product-img" style="background-image: ${p.img}"></div>
+                        <div class="product-info">
+                            <h4>${p.name}</h4>
+                            <select class="variant-select" onchange="updatePrice(this, ${p.basePrice})">
+                                <option value="home">حساب هوم (ساني) - الافتراضي</option>
+                                <option value="full">حساب كامل جديد (+200 ج.م)</option>
+                                <option value="shared">حساب مشترك دائم (-50 ج.م)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="product-info" style="padding-top: 0;">
+                        <div class="price-buy">
+                            <span class="product-price">${p.basePrice} ج.م</span>
+                            <button class="buy-btn" onclick="openCheckout('${p.name}')">شراء الآن</button>
+                        </div>
+                    </div>
+                `;
+
+                if(p.type === 'featured') {
+                    featuredContainer.appendChild(card);
+                } else {
+                    newlyAddedContainer.appendChild(card);
+                }
+            });
+        }
+
+        // تغيير السعر فورياً عند تغيير نوع الحساب
+        function updatePrice(selectElement, basePrice) {
+            let priceSpan = selectElement.closest('.product-card').querySelector('.product-price');
+            let selected = selectElement.value;
+            let finalPrice = basePrice;
+
+            if(selected === 'full') finalPrice += 200;
+            if(selected === 'shared') finalPrice -= 50;
+
+            priceSpan.innerText = finalPrice + " ج.م";
+        }
+
+        // تشغيل وإغلاق القائمة الجانبية (3 شرطات)
+        function toggleSidebar() {
+            document.getElementById('categoriesSidebar').classList.toggle('active');
+        }
+
+        // تحريك منتجات Featured بالأسهم
+        function scrollCarousel(dir) {
+            const carousel = document.getElementById('featuredContainer');
+            carousel.scrollLeft += (dir * 250);
+        }
+
+        // تحريك تلقائي لمنتجات Featured كل 10 ثوانٍ كاملة
+        setInterval(() => {
+            const carousel = document.getElementById('featuredContainer');
+            if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth) {
+                carousel.scrollLeft = 0;
+            } else {
+                scrollCarousel(1);
+            }
+        }, 10000);
+
+        // فتح وإغلاق شباك الدفع الكاش
+        function openCheckout(productName) {
+            currentTargetProduct = productName;
+            document.getElementById('formStage').style.display = 'block';
+            document.getElementById('successStage').style.display = 'none';
+            document.getElementById('checkoutModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('checkoutModal').classList.remove('active');
+        }
+
+        function selectPayment(element, method) {
+            document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedPaymentMethod = method;
+        }
+
+        // إتمام الأوردر وتوليد الرقم الفريد وتحديث لوحة الأدمن
+        function submitOrder() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+
+            if(!name || !phone || !selectedPaymentMethod) {
+                alert('من فضلك قم بملء الاسم ورقم الهاتف واختيار طريقة الدفع المطلوبة!');
+                return;
+            }
+
+            let generatedOrderId = Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('orderIdText').innerText = '#' + generatedOrderId;
+
+            cartItemsCount++;
+            document.getElementById('cart-count').innerText = cartItemsCount;
+
+            const logBox = document.getElementById('adminOrdersLog');
+            if(logBox.innerHTML.includes('لا توجد طلبات')) logBox.innerHTML = '';
+            
+            logBox.innerHTML = `
+                <div style="border-bottom:1px solid #333; padding: 10px 0; text-align:right;">
+                    <strong style="color:var(--secondary-color);">أوردر جديد #${generatedOrderId}</strong><br>
+                    المنتج: ${currentTargetProduct}<br>
+                    العميل: ${name} (${phone})<br>
+                    طريقة الدفع: ${selectedPaymentMethod}
+                </div>
+            ` + logBox.innerHTML;
+
+            document.getElementById('formStage').style.display = 'none';
+            document.getElementById('successStage').style.display = 'block';
+        }
+
+        // فتح وإغلاق لوحة التحكم تحت
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanelArea');
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // كود الأدمن: إضافة كتيجوري جديدة لايف
+        function addNewCategory() {
+            const name = document.getElementById('newCatName').value.trim();
+            if(!name) return;
+
+            const sidebarList = document.getElementById('sidebarCatList');
+            const mainList = document.getElementById('mainCatList');
+
+            let li1 = document.createElement('li'); li1.innerHTML = `<a href="#">${name}</a>`;
+            let li2 = document.createElement('li'); li2.innerHTML = `<a href="#">${name}</a>`;
+
+            sidebarList.appendChild(li1);
+            mainList.appendChild(li2);
+
+            document.getElementById('newCatName').value = '';
+            alert(`تم إضافة الكتيجوري (${name}) بنجاح!`);
+        }
+
+        // كود الأدمن: إطلاق منتج جديد للواجهة لايف
+        function addNewProductFromAdmin() {
+            const name = document.getElementById('newProdName').value.trim();
+            const price = parseInt(document.getElementById('newProdPrice').value.trim());
+            const section = document.getElementById('newProdSection').value;
+
+            if(!name || !price) {
+                alert('برجاء إدخال بيانات اللعبة وسعرها!');
+                return;
+            }
+
+            products.push({
+                id: products.length + 1,
+                name: name,
+                basePrice: price,
+                type: section,
+                img: 'url("https://unsplash.com")'
+            });
+
+            initShop();
+            document.getElementById('newProdName').value = '';
+            document.getElementById('newProdPrice').value = '';
+            alert('تم نشر وبث المنتج في القسم المختار بنجاح!');
+        }
+
+        window.onload = initShop;
+    </script>
+</body>
+</html>

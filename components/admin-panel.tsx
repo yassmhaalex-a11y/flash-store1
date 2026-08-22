@@ -42,7 +42,7 @@ export function AdminPanel(){
   async function setOrderStatus(id:string,status:string){if(!sb)return;await sb.from("orders").update({status}).eq("id",id);await load();}
   async function saveProduct(){
     const data={...product,price:Number(product.price)||0,slug:product.slug||product.name.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-")};
-    const id=editing; await save("products",data,id);
+    const id=editing ?? undefined; await save("products",data,id);
     setProduct(emptyProduct);setEditing(null);
   }
   async function addVariant(){if(!sb||!variant.product_id||!variant.name)return;const {error}=await sb.from("product_variants").insert({...variant,price:Number(variant.price)||0,stock:variant.stock===""?null:Number(variant.stock)});if(error)setMsg(error.message);else{setMsg("Variant added.");setVariant({product_id:"",name:"",price:"0",stock:""});await load();}}

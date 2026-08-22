@@ -36,7 +36,7 @@ export function Checkout() {
     <main>
       <div className="simple-top"><Link href="/">← Flash Store</Link></div>
       <div className="checkout">
-        <div><h1>Checkout</h1><p className="muted">Manual payment confirmation — no fake payment processing.</p>{items.map(i => <div className="checkout-item" key={i.id + i.variant}><img src={i.image} /><div><b>{i.name}</b><span>{i.variant} × {i.quantity}</span></div><strong>{i.price * i.quantity} EGP</strong><button onClick={() => remove(i.id, i.variant)}>×</button></div>)}</div>
+        <div><h1>Checkout</h1><p className="muted">Manual payment confirmation — no fake payment processing.</p>{items.map((i: import("./cart-provider").CartItem) => <div className="checkout-item" key={i.id + i.variant}><img src={i.image} /><div><b>{i.name}</b><span>{i.variant} × {i.quantity}</span></div><strong>{i.price * i.quantity} EGP</strong><button onClick={() => remove(i.id, i.variant)}>×</button></div>)}</div>
         <form onSubmit={submit} className="checkout-form">
           <h2>Your details</h2><label>Full name<input required value={name} onChange={e => setName(e.target.value)} placeholder="Your name" /></label>
           <label>Phone number<input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" /></label>

@@ -1,8 +1,0 @@
-{
-  "name":"flash-store-v16",
-  "version":"16.0.0",
-  "private":true,
-  "scripts":{"dev":"vercel dev","start":"vercel dev","build":"echo ready"},
-  "dependencies":{"@supabase/supabase-js":"^2.57.0"},
-  "devDependencies":{"vercel":"^48.0.0"}
-}

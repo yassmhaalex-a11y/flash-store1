@@ -8,18 +8,21 @@
 :root{--admin-card:var(--panel,#fff);--admin-border:var(--line,#e5e7eb)}
 .admin-wrap{max-width:1400px;margin:auto}.admin-nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.admin-nav button{border:1px solid var(--admin-border);background:var(--admin-card);padding:10px 14px;border-radius:10px;cursor:pointer}.admin-nav button.active{background:var(--accent,#ff3b30);color:#fff;border-color:var(--accent,#ff3b30)}
 .admin-section{display:none}.admin-section.active{display:block}.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.admin-card{background:var(--admin-card);border:1px solid var(--admin-border);border-radius:18px;padding:20px}.admin-card.full{grid-column:1/-1}.admin-card h2{margin-top:0}.admin-item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--admin-border);flex-wrap:wrap}.admin-item:last-child{border-bottom:0}.admin-main{min-width:220px;flex:1}.admin-actions{display:flex;gap:7px;flex-wrap:wrap}.admin-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.admin-form .wide{grid-column:1/-1}.admin-form input,.admin-form textarea,.admin-form select{width:100%;padding:11px;border:1px solid var(--admin-border);border-radius:10px;background:transparent;color:inherit}.admin-form textarea{min-height:90px;resize:vertical}.admin-form label{font-size:13px;font-weight:700;display:block;margin-bottom:5px}.admin-actions-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}.admin-muted{font-size:13px;opacity:.7}.admin-preview{width:150px;height:75px;object-fit:cover;border-radius:10px;border:1px solid var(--admin-border);background:#111}.toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{padding:16px;border:1px solid var(--admin-border);border-radius:15px;background:var(--admin-card)}.stat b{font-size:25px;display:block}.danger{border-color:#dc2626!important;color:#dc2626}.success{color:#15803d}.hidden{display:none!important}@media(max-width:850px){.admin-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.admin-form{grid-template-columns:1fr}.admin-form .wide{grid-column:auto}.admin-card.full{grid-column:auto}}
-.modal-box{max-width:520px;margin:40px auto;padding:28px;border:1px solid var(--admin-border);border-radius:20px;background:var(--admin-card)}\n</style>
+.admin-login-card{max-width:460px;margin:70px auto;text-align:left}.admin-login-form{display:grid;gap:14px;margin-top:18px}.admin-login-form label{font-size:13px;font-weight:700}.admin-login-form input{display:block;width:100%;margin-top:6px;padding:13px;border:1px solid var(--admin-border);border-radius:10px;background:transparent;color:inherit}.admin-login-form .btn{width:100%;margin-top:4px}</style>
 </head>
 <body>
 <header class="header"><a class="brand" href="/">FLASH STORE</a><nav><a href="/">Store</a><a href="/account.html">Account</a></nav></header>
 <main class="section admin-wrap">
-<div id="gate" class="modal-box">
-<h2>Admin Login</h2><p class="muted">Sign in with your administrator email and password.</p>
-<form id="adminLogin" class="admin-form" style="margin-top:16px">
-<div class="wide"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
-<div class="wide"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
-<div class="wide admin-actions-row"><button class="btn" type="submit">Sign In</button><span id="loginMsg" class="admin-muted"></span></div>
-</form></div>
+<div id="gate" class="modal-box admin-login-card">
+<h2>FLASH STORE Admin</h2>
+<p class="muted">Enter your admin username and password.</p>
+<form id="adminLoginForm" class="admin-login-form">
+<label>Admin username<input id="adminUsername" autocomplete="username" required></label>
+<label>Password<input id="adminPassword" type="password" autocomplete="current-password" required></label>
+<button class="btn" type="submit">Login</button>
+<p id="loginMsg" class="admin-muted"></p>
+</form>
+</div>
 <div id="panel" class="hidden">
 <div class="section-head"><div><span class="eyebrow">FLASH STORE</span><h1>Admin Panel</h1><p class="admin-muted">Control your store, products, payments, banners and orders from one place.</p></div><button class="small-btn" id="logout">Logout</button></div>
 <div class="stats"><div class="stat"><span class="admin-muted">Products</span><b id="statProducts">0</b></div><div class="stat"><span class="admin-muted">Categories</span><b id="statCategories">0</b></div><div class="stat"><span class="admin-muted">Orders</span><b id="statOrders">0</b></div><div class="stat"><span class="admin-muted">Banners</span><b id="statBanners">0</b></div></div>
@@ -41,5 +44,5 @@
 
 <section class="admin-section" id="tab-orders"><div class="admin-card"><h2>Orders</h2><div id="orderList"></div></div></section>
 </div></main>
-<script src="/admin.js"></script><script>document.getElementById("adminLogin")?.addEventListener("submit",async e=>{e.preventDefault();const m=document.getElementById("loginMsg");m.textContent="Signing in...";try{const r=await fetch("/api/auth",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"signin",email:document.getElementById("loginEmail").value.trim(),password:document.getElementById("loginPassword").value})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Sign in failed");location.reload()}catch(x){m.textContent=x.message}});</script>
+<script src="/admin.js"></script>
 </body></html>

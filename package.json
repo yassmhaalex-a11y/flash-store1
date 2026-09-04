@@ -1,7 +1,11 @@
 {
-  "name": "flash-store-v17",
-  "version": "17.0.0",
+  "name": "flash-store-v22",
+  "version": "22.0.0",
   "private": true,
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }

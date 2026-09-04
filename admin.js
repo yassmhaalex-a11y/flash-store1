@@ -7,7 +7,28 @@ const del=(table,id)=>api('/api/admin',{method:'DELETE',headers:{'content-type':
 const val=id=>document.getElementById(id).value;
 const set=(id,v)=>{document.getElementById(id).value=v??''};
 function setMsg(id,msg,ok=true){const x=document.getElementById(id);if(x){x.textContent=msg;x.className='admin-muted '+(ok?'success':'')}}
-async function init(){try{me=await api('/api/me');if(me.role!=='admin')throw Error('Admin access required');document.querySelector('#gate').classList.add('hidden');document.querySelector('#panel').classList.remove('hidden');await refresh()}catch(e){document.querySelector('#gate').innerHTML=`<h2>Admin access required</h2><p class="muted">${esc(e.message)}</p><a class="btn" href="/account.html">Sign In</a>`}}
+async function init(){
+  try{
+    const r=await fetch('/api/admin',{credentials:'same-origin'});
+    if(!r.ok)throw Error('Admin login required');
+    document.querySelector('#gate').classList.add('hidden');
+    document.querySelector('#panel').classList.remove('hidden');
+    await refresh();
+  }catch(e){
+    document.querySelector('#gate').classList.remove('hidden');
+  }
+}
+function setupLogin(){
+  const form=document.querySelector('#adminLoginForm'); if(!form)return;
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    setMsg('loginMsg','Logging in...',true);
+    try{
+      await api('/api/admin-login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:val('adminUsername'),password:val('adminPassword')})});
+      form.reset(); document.querySelector('#gate').classList.add('hidden');document.querySelector('#panel').classList.remove('hidden');await refresh();
+    }catch(err){setMsg('loginMsg',err.message,false)}
+  });
+}
 async function refresh(){data=await api('/api/admin');render();populateSelects();renderAdmins()}
 function render(){
  document.querySelector('#statProducts').textContent=(data.products||[]).length;document.querySelector('#statCategories').textContent=(data.categories||[]).length;document.querySelector('#statOrders').textContent=(data.orders||[]).length;document.querySelector('#statBanners').textContent=(data.banners||[]).length;
@@ -45,5 +66,6 @@ document.getElementById('saveAdminRole').onclick=async()=>{const email=val('admi
 function renderAdmins(){document.querySelector('#adminList').innerHTML=(data.profiles||[]).filter(x=>x.role==='admin').map(x=>`<div class="admin-item"><div class="admin-main"><b>${esc(x.email)}</b><div class="admin-muted">${esc(x.full_name||'')}</div></div><button class="small-btn" onclick="demoteAdmin('${esc(x.email)}')">Make Client</button></div>`).join('')||'<p class="admin-muted">No admins found.</p>'}
 window.demoteAdmin=async email=>{if(confirm('Make this user a client?')){await post({type:'admin_role',email,role:'client'});await refresh()}};
 document.querySelectorAll('#tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.admin-section').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('tab-'+btn.dataset.tab).classList.add('active')});
-document.getElementById('logout').onclick=async()=>{await api('/api/auth',{method:'DELETE'});location.href='/account.html'};
+document.getElementById('logout').onclick=async()=>{await api('/api/admin-logout',{method:'POST'});location.reload()};
+setupLogin();
 init();

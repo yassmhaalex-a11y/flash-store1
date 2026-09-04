@@ -40,4 +40,9 @@ Do not put SUPABASE_SERVICE_ROLE_KEY in browser/public files.
 7. Open `/` and test the store.
 
 
-V21 fixes: admin login gate, Supabase URL fallbacks for NEXT_PUBLIC vars, automatic admin profile provisioning for ADMIN_EMAIL, and hero image fallback. Existing storefront styling is preserved.
+## Admin Login (V22)
+- Admin page: `/admin.html`
+- Username: value of `ADMIN_USERNAME` (default: `admin`)
+- Password: value of `ADMIN_PASSWORD` (default: `2013`)
+- The admin session is stored in a secure HttpOnly cookie.
+- For production, set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel Environment Variables.

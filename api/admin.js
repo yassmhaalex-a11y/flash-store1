@@ -1,5 +1,17 @@
-const {json,env,supabase}=require("./_lib");async function getUser(req){const c=req.headers.cookie||"";const m=c.match(/(?:^|;\s*)flash_token=([^;]+)/);if(!m)return null;const r=await fetch((env("NEXT_PUBLIC_SUPABASE_URL")||env("SUPABASE_URL")).replace(/\/rest\/v1\/?$/,"" )+"/auth/v1/user",{headers:{apikey:env("NEXT_PUBLIC_SUPABASE_ANON_KEY")||env("SUPABASE_ANON_KEY"),Authorization:"Bearer "+m[1]}});return r.ok?await r.json():null} const slugify=x=>String(x||"item").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-module.exports=async(req,res)=>{try{const u=await getUser(req);if(!u)return json(res,401,{error:"Sign in required"});const db=supabase();const prof=await db.from("profiles").select("*");const p=(prof.data||[]).find(x=>x.id===u.id);if(!p||p.role!=="admin")return json(res,403,{error:"Admin access required"});let b=req.body||{};
+const {json,env,supabase,getCookie,verifyAdminToken}=require("./_lib");
+async function getUser(req){
+  const adminToken=verifyAdminToken(getCookie(req,"flash_admin"));
+  if(adminToken)return {adminSession:true,username:adminToken.u};
+  const c=req.headers.cookie||"";
+  const m=c.match(/(?:^|;\s*)flash_token=([^;]+)/);
+  if(!m)return null;
+  const root=env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"");
+  if(!root)return null;
+  const r=await fetch(root+"/auth/v1/user",{headers:{apikey:env("SUPABASE_ANON_KEY"),Authorization:"Bearer "+m[1]}});
+  return r.ok?await r.json():null;
+}
+const slugify=x=>String(x||"item").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+module.exports=async(req,res)=>{try{const u=await getUser(req);if(!u)return json(res,401,{error:"Admin login required"});const db=supabase();if(!u.adminSession){const prof=await db.from("profiles").select("*");const p=(prof.data||[]).find(x=>x.id===u.id);if(!p||p.role!=="admin")return json(res,403,{error:"Admin access required"});}let b=req.body||{};
 if(req.method==="GET"){const [c,pr,d,pay,o,ban,opt]=await Promise.all([db.from("categories").select("*"),db.from("products").select("*"),db.from("discounts").select("*"),db.from("payment_methods").select("*"),db.from("orders").select("*"),db.from("hero_banners").select("*"),db.from("product_options").select("*")]);const profs=await db.from("profiles").select("*");if(profs.error)throw profs.error;return json(res,200,{categories:c.data||[],products:pr.data||[],discounts:d.data||[],payments:pay.data||[],orders:(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)),banners:ban.data||[],options:opt.data||[],profiles:profs.data||[]})}
 if(req.method==="POST"){if(b.type==="category"){const row={name:b.name,description:b.description||"",image_url:b.image_url||"",sort_order:Number(b.sort_order||0),active:b.active!==false};const q=b.id?await db.from("categories").update(row,{id:"eq."+b.id}):await db.from("categories").insert({...row,slug:slugify(b.name)+"-"+Date.now()});if(q.error)throw q.error}
 else if(b.type==="product"){const row={category_id:b.category_id||null,name:b.name,slug:slugify(b.name)+"-"+Date.now(),description:b.description||"",image_url:b.image_url||"",platform:b.platform||"",old_price:Number(b.old_price||0),price:Number(b.price||0),featured:!!b.featured,best_seller:!!b.best_seller,discount_badge:!!b.discount_badge,active:b.active!==false};const q=b.id?await db.from("products").update(row,{id:"eq."+b.id}):await db.from("products").insert(row);if(q.error)throw q.error;if(b.id&&Array.isArray(b.options)){await db.from("product_options").delete({product_id:"eq."+b.id});for(const o of b.options)await db.from("product_options").insert({product_id:b.id,name:o.name,price:Number(o.price||0),old_price:Number(o.old_price||0),image_url:o.image_url||"",active:o.active!==false,sort_order:Number(o.sort_order||0)})}}

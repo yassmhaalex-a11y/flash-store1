@@ -46,3 +46,9 @@ Do not put SUPABASE_SERVICE_ROLE_KEY in browser/public files.
 - Password: value of `ADMIN_PASSWORD` (default: `2013`)
 - The admin session is stored in a secure HttpOnly cookie.
 - For production, set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` in Vercel Environment Variables.
+
+
+IMPORTANT DATABASE SETUP
+Before using Admin add/edit/delete features, run the included schema.sql in your Supabase SQL Editor. If you see an error saying a table such as payment_methods was not found in the schema cache, the database schema has not been applied yet. The admin panel now shows a friendly setup message instead of a raw Supabase error.
+
+Categories are database-driven: create, edit, activate/deactivate, and delete them from Admin > Categories. Homepage categories use the active categories from the database.

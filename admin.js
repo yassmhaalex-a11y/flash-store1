@@ -6,6 +6,7 @@ const api=async(u,o={})=>{
   if(!r.ok){
     const raw=String(d.error||'');
     if(/fetch failed|failed to fetch|network/i.test(raw)) throw Error('تعذر الاتصال بقاعدة البيانات. راجع إعدادات Supabase في Vercel.');
+    if(/could not find the table|relation .* does not exist|schema cache/i.test(raw)) throw Error('هذه الخاصية تحتاج جداول قاعدة البيانات. افتح Supabase > SQL Editor وشغّل ملف schema.sql الموجود مع المتجر، ثم أعد نشر الموقع.');
     throw Error(raw||'حدثت مشكلة أثناء تنفيذ العملية. حاول مرة أخرى.');
   }
   return d;

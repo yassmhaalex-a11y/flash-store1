@@ -1,5 +1,15 @@
 let me=null,data={},editing={product:null,category:null,payment:null,banner:null};
-const api=async(u,o={})=>{const r=await fetch(u,o);const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Request failed');return d};
+const api=async(u,o={})=>{
+  let r;
+  try{r=await fetch(u,o)}catch(e){throw Error('تعذر الاتصال بالخادم. تأكد أن الموقع منشور بشكل صحيح ثم حاول مرة أخرى.')}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok){
+    const raw=String(d.error||'');
+    if(/fetch failed|failed to fetch|network/i.test(raw)) throw Error('تعذر الاتصال بقاعدة البيانات. راجع إعدادات Supabase في Vercel.');
+    throw Error(raw||'حدثت مشكلة أثناء تنفيذ العملية. حاول مرة أخرى.');
+  }
+  return d;
+};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const post=b=>api('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
 const patch=b=>api('/api/admin',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
@@ -7,6 +17,12 @@ const del=(table,id)=>api('/api/admin',{method:'DELETE',headers:{'content-type':
 const val=id=>document.getElementById(id).value;
 const set=(id,v)=>{document.getElementById(id).value=v??''};
 function setMsg(id,msg,ok=true){const x=document.getElementById(id);if(x){x.textContent=msg;x.className='admin-muted '+(ok?'success':'')}}
+function notice(title,text){const box=document.getElementById('adminNotice'),t=document.getElementById('adminNoticeTitle'),p=document.getElementById('adminNoticeText');if(!box)return alert(text);t.textContent=title||'Complete the required fields';p.textContent=text||'Please fill in the required information before continuing.';box.classList.remove('hidden');box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');document.getElementById('adminNoticeOk')?.focus()}
+function closeNotice(){document.getElementById('adminNotice')?.classList.add('hidden')}
+document.getElementById('adminNoticeOk')?.addEventListener('click',closeNotice);
+document.getElementById('adminNotice')?.addEventListener('click',e=>{if(e.target.id==='adminNotice')closeNotice()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNotice()});
+function requireFields(fields){for(const f of fields){const el=document.getElementById(f.id);if(!el)continue;const value=String(el.value||'').trim();if(!value){notice('Missing information',`Please enter ${f.name}.`);el.focus();return false}}return true}
 async function uploadImage(file){
   if(!file) return '';
   const fd=new FormData(); fd.append('file',file);
@@ -68,14 +84,27 @@ window.toggleBanner=async id=>{const b=data.banners.find(x=>x.id===id);await pos
 window.toggleDiscount=async id=>{const d=data.discounts.find(x=>x.id===id);await post({type:'discount_update',id,active:!d.active});await refresh()};
 window.statusOrder=async(id,status)=>{await patch({type:'order',id,status});await refresh()};
 window.manageOptions=id=>{const p=data.products.find(x=>x.id===id);const opts=(data.options||[]).filter(o=>o.product_id===id);const text=opts.map((o,i)=>`${i+1}. ${o.name} | ${o.price} | ${o.old_price||0} | ${o.image_url||''}`).join('\n');const input=prompt(`Options for ${p.name}. One per line: Name | Price | Old Price | Image URL\n\n${text}`,'');if(input===null)return;const options=input.split('\n').map((line,i)=>{const a=line.split('|').map(x=>x.trim());return a[0]?{name:a[0],price:Number(a[1]||0),old_price:Number(a[2]||0),image_url:a[3]||'',sort_order:i}:null}).filter(Boolean);post({type:'product',id,...p,options}).then(refresh)};
-document.getElementById('saveProduct').onclick=async()=>{try{setMsg('productMsg','Saving...');const image_url=await fileOrExisting('pImageFile','pImage');const b={type:'product',id:editing.product||undefined,name:val('pName').trim(),platform:val('pPlatform').trim(),price:Number(val('pPrice')||0),old_price:Number(val('pOldPrice')||0),image_url,description:val('pDescription').trim(),category_id:val('pCategory')||null,featured:document.getElementById('pFeatured').checked,best_seller:document.getElementById('pBest').checked,discount_badge:document.getElementById('pDiscount').checked,active:document.getElementById('pActive').checked};if(!b.name)throw Error('Product name is required');await post(b);setMsg('productMsg','Saved');resetProduct();await refresh()}catch(e){setMsg('productMsg',e.message,false)}};
+document.getElementById('saveProduct').onclick=async()=>{
+  if(!requireFields([{id:'pName',name:'the product name'},{id:'pPlatform',name:'the platform'},{id:'pPrice',name:'the price'}]))return;
+  try{setMsg('productMsg','Saving...');const image_url=await fileOrExisting('pImageFile','pImage');const b={type:'product',id:editing.product||undefined,name:val('pName').trim(),platform:val('pPlatform').trim(),price:Number(val('pPrice')||0),old_price:Number(val('pOldPrice')||0),image_url,description:val('pDescription').trim(),category_id:val('pCategory')||null,featured:document.getElementById('pFeatured').checked,best_seller:document.getElementById('pBest').checked,discount_badge:document.getElementById('pDiscount').checked,active:document.getElementById('pActive').checked};await post(b);setMsg('productMsg','Saved');resetProduct();await refresh()}catch(e){setMsg('productMsg',e.message,false);notice('Couldn’t save product',e.message)}};
 document.getElementById('cancelProduct').onclick=resetProduct;
-document.getElementById('saveCategory').onclick=async()=>{try{const b={type:'category',id:editing.category||undefined,name:val('cName').trim(),description:val('cDescription'),image_url:await fileOrExisting('cImageFile','cImage'),sort_order:Number(val('cSort')||0),active:val('cActive')==='true'};if(!b.name)throw Error('Category name is required');await post(b);resetCategory();await refresh()}catch(e){alert(e.message)}};document.getElementById('cancelCategory').onclick=resetCategory;
-document.getElementById('savePayment').onclick=async()=>{const b={type:'payment',id:editing.payment||undefined,name:val('payName').trim(),details:val('payDetails'),sort_order:Number(val('paySort')||0),active:val('payActive')==='true'};if(!b.name)return alert('Payment name is required');await post(b);resetPayment();await refresh()};document.getElementById('cancelPayment').onclick=resetPayment;
-document.getElementById('saveBanner').onclick=async()=>{try{const b={type:'banner',id:editing.banner||undefined,title:val('bTitle'),text:val('bText'),image_url:await fileOrExisting('bImageFile','bImage'),button_text:val('bButton')||'BUY NOW',product_id:val('bProduct')||null,sort_order:Number(val('bSort')||0),active:val('bActive')==='true'};if(!b.title.trim())throw Error('Banner title is required');await post(b);resetBanner();await refresh()}catch(e){alert(e.message)}};document.getElementById('cancelBanner').onclick=resetBanner;
-document.getElementById('saveDiscount').onclick=async()=>{const b={type:'discount',code:val('dCode').trim(),value:Number(val('dValue')||0),kind:val('dKind'),scope:val('dScope'),first_order_only:document.getElementById('dFirst').checked,one_use_per_user:document.getElementById('dOne').checked,max_uses:val('dMax')?Number(val('dMax')):null};if(!b.code)return alert('Discount code is required');await post(b);['dCode','dValue','dMax'].forEach(x=>set(x,''));await refresh()};
+document.getElementById('saveCategory').onclick=async()=>{
+  if(!requireFields([{id:'cName',name:'the category name'}]))return;
+  try{const b={type:'category',id:editing.category||undefined,name:val('cName').trim(),description:val('cDescription'),image_url:await fileOrExisting('cImageFile','cImage'),sort_order:Number(val('cSort')||0),active:val('cActive')==='true'};await post(b);resetCategory();await refresh()}catch(e){notice('Couldn’t save category',e.message)}};document.getElementById('cancelCategory').onclick=resetCategory;
+document.getElementById('savePayment').onclick=async()=>{
+  if(!requireFields([{id:'payName',name:'the payment method name'},{id:'payDetails',name:'the payment number or account details'}]))return;
+  try{const b={type:'payment',id:editing.payment||undefined,name:val('payName').trim(),details:val('payDetails'),sort_order:Number(val('paySort')||0),active:val('payActive')==='true'};await post(b);resetPayment();await refresh()}catch(e){notice('Couldn’t save payment method',e.message)}};document.getElementById('cancelPayment').onclick=resetPayment;
+document.getElementById('saveBanner').onclick=async()=>{
+  if(!requireFields([{id:'bTitle',name:'the banner title'},{id:'bText',name:'the banner text'}]))return;
+  const file=document.getElementById('bImageFile')?.files?.[0];const existing=val('bImage');if(!file&&!existing){notice('Missing information','Please choose a hero banner image from your computer.');return}
+  try{const b={type:'banner',id:editing.banner||undefined,title:val('bTitle').trim(),text:val('bText').trim(),image_url:await fileOrExisting('bImageFile','bImage'),button_text:val('bButton')||'BUY NOW',product_id:val('bProduct')||null,sort_order:Number(val('bSort')||0),active:val('bActive')==='true'};await post(b);resetBanner();await refresh()}catch(e){notice('Couldn’t save banner',e.message)}};document.getElementById('cancelBanner').onclick=resetBanner;
+document.getElementById('saveDiscount').onclick=async()=>{
+  if(!requireFields([{id:'dCode',name:'the discount code'},{id:'dValue',name:'the discount value'}]))return;
+  try{const b={type:'discount',code:val('dCode').trim(),value:Number(val('dValue')||0),kind:val('dKind'),scope:val('dScope'),first_order_only:document.getElementById('dFirst').checked,one_use_per_user:document.getElementById('dOne').checked,max_uses:val('dMax')?Number(val('dMax')):null};await post(b);['dCode','dValue','dMax'].forEach(x=>set(x,''));await refresh()}catch(e){notice('Couldn’t save discount',e.message)}};
 document.getElementById('saveSettings').onclick=async()=>{await post({type:'settings',store_name:val('setName'),logo_url:val('setLogo'),about_title:val('setAboutTitle'),about_text:val('setAbout'),whatsapp:val('setWa')});setMsg('settingsMsg','Settings saved');await refresh()};
-document.getElementById('saveAdminRole').onclick=async()=>{const email=val('adminEmail').trim();if(!email)return alert('Email is required');await post({type:'admin_role',email,role:val('adminRole')});set('adminEmail','');await refresh()};
+document.getElementById('saveAdminRole').onclick=async()=>{
+  if(!requireFields([{id:'adminEmail',name:'the user email'}]))return;
+  try{await post({type:'admin_role',email:val('adminEmail').trim(),role:val('adminRole')});set('adminEmail','');await refresh()}catch(e){notice('Couldn’t update admin role',e.message)}};
 function renderAdmins(){document.querySelector('#adminList').innerHTML=(data.profiles||[]).filter(x=>x.role==='admin').map(x=>`<div class="admin-item"><div class="admin-main"><b>${esc(x.email)}</b><div class="admin-muted">${esc(x.full_name||'')}</div></div><button class="small-btn" onclick="demoteAdmin('${esc(x.email)}')">Make Client</button></div>`).join('')||'<p class="admin-muted">No admins found.</p>'}
 window.demoteAdmin=async email=>{if(confirm('Make this user a client?')){await post({type:'admin_role',email,role:'client'});await refresh()}};
 document.querySelectorAll('#tabs button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.admin-section').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('tab-'+btn.dataset.tab).classList.add('active')});

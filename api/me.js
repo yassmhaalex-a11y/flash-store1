@@ -1,0 +1,3 @@
+const {json,env,supabase}=require("./_lib");
+function token(req){const c=req.headers.cookie||"";const m=c.match(/(?:^|;\s*)flash_token=([^;]+)/);return m&&m[1]}
+module.exports=async(req,res)=>{try{const t=token(req);if(!t)return json(res,401,{error:"Not signed in"});const root=env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"");const r=await fetch(root+"/auth/v1/user",{headers:{"apikey":env("SUPABASE_ANON_KEY"),"Authorization":"Bearer "+t}});if(!r.ok)return json(res,401,{error:"Session expired"});const u=await r.json();const db=supabase();const q=await db.from("profiles").select("*");if(q.error)throw q.error;const p=(q.data||[]).find(x=>x.id===u.id);json(res,200,{id:u.id,email:u.email,role:p?.role||"client"})}catch(e){json(res,500,{error:e.message})}};

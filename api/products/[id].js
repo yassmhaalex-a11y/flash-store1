@@ -1,2 +1,0 @@
-const {json,supabase}=require("../_lib");
-module.exports=async(req,res)=>{try{const id=req.url.split("/").pop().split("?")[0];const db=supabase();const q=await db.from("product_options").select("*").eq("product_id",id).eq("active",true).order("sort_order");if(q.error)throw q.error;json(res,200,q.data||[])}catch(e){json(res,500,{error:e.message})}};

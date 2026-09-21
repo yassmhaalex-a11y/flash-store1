@@ -3,9 +3,11 @@ function json(res,status,data){res.statusCode=status;res.setHeader("Content-Type
 function env(name){
   const fallback={SUPABASE_URL:process.env.NEXT_PUBLIC_SUPABASE_URL,SUPABASE_ANON_KEY:process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY};
   let value=process.env[name] ?? fallback[name] ?? "";
-  // Vercel values are sometimes pasted with surrounding quotes/newlines.
-  // Strip only accidental whitespace/quotes so fetch() receives a valid header value.
-  return String(value).trim().replace(/^["']|["']$/g, "").trim();
+  value=String(value).trim().replace(/^["\']|["\']$/g, "").trim();
+  // Secret/API keys must never contain whitespace inside the HTTP header.
+  // This also fixes keys accidentally pasted with an internal space/newline in Vercel.
+  if(["SUPABASE_SERVICE_ROLE_KEY","SUPABASE_ANON_KEY","ADMIN_SESSION_SECRET"].includes(name)) value=value.replace(/\s+/g, "");
+  return value;
 }
 function base(){return env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"")}
 function headers(extra={}){

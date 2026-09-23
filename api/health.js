@@ -1,0 +1,1 @@
+const {json,env}=require("./_lib");module.exports=async(req,res)=>json(res,200,{ok:true,hasSupabaseUrl:!!env("SUPABASE_URL"),hasServiceRole:!!env("SUPABASE_SERVICE_ROLE_KEY"),time:new Date().toISOString()});

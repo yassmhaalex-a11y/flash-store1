@@ -1,4 +1,4 @@
-const {json,env,supabase,readBody}=require("./_lib");
+const {json,env,supabase}=require("./_lib");
 async function authUser(token){if(!token)return null;const r=await fetch(env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"")+"/auth/v1/user",{headers:{"apikey":env("SUPABASE_ANON_KEY"),"Authorization":"Bearer "+token}});return r.ok?await r.json():null}
 module.exports=async(req,res)=>{
  try{
@@ -7,9 +7,7 @@ module.exports=async(req,res)=>{
    const root=env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"");
    if(body.mode==="signup"){
     const r=await fetch(root+"/auth/v1/signup",{method:"POST",headers:{"apikey":env("SUPABASE_ANON_KEY"),"Content-Type":"application/json"},body:JSON.stringify({email:body.email,password:body.password,data:{full_name:body.full_name||""}})});
-    const d=await r.json(); if(!r.ok)return json(res,r.status,{error:d.msg||d.error_description||"Signup failed"});
-    try{const db=supabase();await db.from("notifications").insert({type:"signup",title:"New customer account",message:`${body.full_name||body.email} created a new account.`,related_id:d.user?.id||""})}catch(_){}
-    return json(res,200,{message:"Account created. Check your email if confirmation is enabled.",redirect:"/account.html"});
+    const d=await r.json(); if(!r.ok)return json(res,r.status,{error:d.msg||d.error_description||"Signup failed"}); return json(res,200,{message:"Account created. Check your email if confirmation is enabled.",redirect:"/account.html"});
    }
    const r=await fetch(root+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":env("SUPABASE_ANON_KEY"),"Content-Type":"application/json"},body:JSON.stringify({email:body.email,password:body.password})});
    const d=await r.json(); if(!r.ok)return json(res,r.status,{error:d.error_description||"Sign in failed"});

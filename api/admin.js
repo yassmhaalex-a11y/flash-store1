@@ -1,5 +1,4 @@
 const {json,env,supabase,getCookie,verifyAdminToken,readBody}=require("./_lib");
-const {sendEmail,orderEmail}=require('./email');
 async function getUser(req){
   const adminToken=verifyAdminToken(getCookie(req,"flash_admin"));
   if(adminToken)return {adminSession:true,username:adminToken.u};
@@ -63,15 +62,6 @@ module.exports=async(req,res)=>{try{
  if(req.method==="PATCH"){
   if(b.type==="order"){
     const q=await db.from("orders").update({status:b.status},{id:"eq."+b.id});if(q.error)throw q.error;
-    try{
-      const oq=await db.from("orders").select("*");
-      const order=(oq.data||[]).find(x=>String(x.id)===String(b.id));
-      if(order && order.email && ['processing','completed','cancelled','paid'].includes(b.status)){
-        const iq=await db.from("order_items").select("*");
-        const mail=orderEmail({order,status:b.status,items:(iq.data||[]).filter(i=>String(i.order_id)===String(order.id)),customerName:order.full_name});
-        await sendEmail({to:order.email,subject:`FLASH STORE — Order #${order.order_number} ${mail.label}`,html:mail.html,text:mail.text});
-      }
-    }catch(e){console.error('Order status email error:',e.message)}
   }
   return json(res,200,{ok:true});
  }

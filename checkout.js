@@ -9,12 +9,12 @@ function needsAccount(i){const o=selectedOption(i);const p=selectedProduct(i);re
 function itemPrice(i){const o=selectedOption(i),p=selectedProduct(i);return Number(o?.effective_price??o?.price??p?.effective_price??p?.price??i.price??0)}
 function totals(){const sub=items.reduce((a,x)=>a+itemPrice(x)*Number(x.quantity||1),0);document.querySelector('#sub').textContent=money(sub);document.querySelector('#disc').textContent=money(discountAmount);document.querySelector('#total').textContent=money(Math.max(0,sub-discountAmount))}
 function renderCart(){
- document.querySelector('#items').innerHTML=items.length?items.map((x,i)=>`<div class="cart-line"><img src="${esc(x.image||selectedOption(x)?.image_url||selectedProduct(x)?.image_url||'')}" alt=""><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${x.option_name?esc(x.option_name)+' · ':''}${money(itemPrice(x))}</div>${needsAccount(x)?`<div class="product-account-box"><b>Product account details</b><div class="field"><label>Email</label><input class="cart-account-email" data-key="${esc(x.key)}" type="email" placeholder="Product Email"></div><div class="field"><label>Password</label><input class="cart-account-password" data-key="${esc(x.key)}" type="password" placeholder="Product Password"></div></div>`:''}</div><div class="cart-qty"><button class="small-btn" onclick="changeQty(${i},-1)">−</button><b>${x.quantity}</b><button class="small-btn" onclick="changeQty(${i},1)">+</button></div><div class="cart-price"><b>${money(itemPrice(x)*x.quantity)}</b><button class="small-btn remove-cart" onclick="removeItem(${i})">Remove</button></div></div>`).join(''):`<p class="muted">Your cart is empty.</p>`;
+ document.querySelector('#items').innerHTML=items.length?items.map((x,i)=>`<div class="cart-line"><img src="${esc(x.image||selectedOption(x)?.image_url||selectedProduct(x)?.image_url||'')}" alt=""><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${x.option_name?esc(x.option_name)+' · ':''}${money(itemPrice(x))}</div></div><div class="cart-qty"><button class="small-btn" onclick="changeQty(${i},-1)">−</button><b>${x.quantity}</b><button class="small-btn" onclick="changeQty(${i},1)">+</button></div><div class="cart-price"><b>${money(itemPrice(x)*x.quantity)}</b><button class="small-btn remove-cart" onclick="removeItem(${i})">Remove</button></div></div>`).join(''):`<p class="muted">Your cart is empty.</p>`;
  document.querySelector('#place').disabled=!items.length;totals();
 }
 window.changeQty=(i,d)=>{items[i].quantity=Math.max(1,Number(items[i].quantity||1)+d);saveCart(items)};
 window.removeItem=i=>{items.splice(i,1);saveCart(items)};
-function collectAccountDetails(){return items.map(x=>{const e=document.querySelector(`.cart-account-email[data-key="${CSS.escape(String(x.key))}"]`),p=document.querySelector(`.cart-account-password[data-key="${CSS.escape(String(x.key))}"]`);return {key:x.key,email:e?.value.trim()||'',password:p?.value||''}})}
+function collectAccountDetails(){const email=document.querySelector('#accountEmail')?.value.trim()||'',password=document.querySelector('#accountPassword')?.value||'';return items.map(x=>({key:x.key,email:email,password:password}))}
 async function init(){
  items=cart();renderCart();if(!items.length)return;
  const me=await fetch('/api/me').then(r=>r.ok?r.json():null).catch(()=>null);const gate=document.querySelector('#authGate'),wrap=document.querySelector('#checkoutWrap');
@@ -22,7 +22,7 @@ async function init(){
  currentUser=me;gate.classList.add('hidden');wrap.classList.remove('hidden');document.querySelector('#fullName').value=me.full_name||'';document.querySelector('#email').value=me.email||'';
  try{
   const storeR=await fetch('/api/store');const store=await storeR.json();if(!storeR.ok)throw Error(store.error||'Could not load checkout data');
-  productMap=new Map((store.products||[]).map(p=>[String(p.id),p]));renderCart();
+  productMap=new Map((store.products||[]).map(p=>[String(p.id),p]));renderCart();const requiresAccount=items.some(i=>needsAccount(i));document.querySelector('#accountFields').classList.toggle('hidden',!requiresAccount);
   payments=(store.payments||[]).filter(p=>p.active!==false);
   const select=document.querySelector('#payment');select.innerHTML=payments.length?payments.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join(''):`<option value="">No payment methods available</option>`;select.disabled=!payments.length;updatePayment();
  }catch(e){document.querySelector('#checkoutMsg').textContent=e.message}
@@ -36,7 +36,7 @@ document.querySelector('#place').onclick=async()=>{
  if(!document.querySelector('#fullName').value.trim()||!document.querySelector('#phone').value.trim()){document.querySelector('#checkoutMsg').textContent='Please complete your name and phone.';return}
  if(!payments.length){document.querySelector('#checkoutMsg').textContent='No active payment method is available. Please contact support.';return}
  const details=collectAccountDetails();
- for(const d of details){if((d.email&&!d.password)||(d.password&&!d.email)){document.querySelector('#checkoutMsg').textContent='Please complete both Email and Password for each product that requires them.';return}}
+ const requiresAccount=items.some(i=>needsAccount(i));if(requiresAccount&&(!document.querySelector('#accountEmail').value.trim()||!document.querySelector('#accountPassword').value)){document.querySelector('#checkoutMsg').textContent='This order requires the product Email and Password.';return}
  const file=document.querySelector('#proof').files[0];if(!file){document.querySelector('#checkoutMsg').textContent='Payment proof is required.';return}
  document.querySelector('#place').disabled=true;document.querySelector('#checkoutMsg').textContent='Uploading payment proof...';
  try{

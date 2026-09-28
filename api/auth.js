@@ -1,6 +1,6 @@
 const {json,env,supabase,readBody}=require('./_lib');
 async function configuredAdminEmail(){ try{ const q=await supabase().from('store_settings').select('admin_email').eq('id',1); return q.data?.[0]?.admin_email||env('ADMIN_EMAIL')||''; }catch(_){ return env('ADMIN_EMAIL')||''; } }
-const {sendEmail}=require('./email');
+const {sendStoreEmail}=require('./email');
 
 function cookieToken(req){
   const c=req.headers.cookie||'';
@@ -75,14 +75,7 @@ module.exports=async(req,res)=>{
       }catch(_){ }
       try{
         const adminEmail=await configuredAdminEmail();
-        if(adminEmail){
-          await sendEmail({
-            to:adminEmail,
-            subject:'FLASH STORE — New customer account',
-            html:`<div style="font-family:Arial,sans-serif;max-width:620px;margin:30px auto;padding:24px;border:1px solid #ddd;border-radius:14px"><h2>FLASH STORE</h2><p>A new customer account was created.</p><p><b>Name:</b> ${String(fullName).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}</p><p><b>Email:</b> ${String(email).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}</p></div>`,
-            text:`FLASH STORE\nNew customer account\nName: ${fullName}\nEmail: ${email}`
-          });
-        }
+        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email});
       }catch(e){console.error('Signup email error:',e.message)}
 
       // Sign in through the normal token endpoint so the browser gets the same session cookie as existing users.

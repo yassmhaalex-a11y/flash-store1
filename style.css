@@ -75,3 +75,17 @@
   .hero-home .hero-categories{margin-top:0}
 }
 @media(max-width:420px){.header-actions{gap:5px}.header-actions a{font-size:10px}.header-actions a:nth-child(2),.header-actions a:nth-child(3){padding:6px 7px}.hero-home .hero-image,.hero-home .hero-image img{height:205px;min-height:205px}}
+
+/* V39 admin product manager + pagination */
+.admin-category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin:16px 0 20px}
+.admin-category-tile{min-height:92px;text-align:left;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);cursor:pointer}
+.admin-category-tile:hover,.admin-category-tile.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.admin-category-tile b{display:block;font-size:16px;margin-bottom:8px}.admin-category-tile span{color:var(--muted);font-size:13px}
+.admin-search{flex:1;min-width:180px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.admin-pagination{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.admin-pagination .active-page{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.option-row{display:grid;grid-template-columns:1.2fr .7fr .7fr .7fr 1fr 1fr 1.2fr auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#0f1218}
+.option-row input{min-width:0}.opt-account-label{white-space:nowrap;font-size:12px}
+.product-account-box{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0f1218}
+@media(max-width:900px){.option-row{grid-template-columns:1fr 1fr}.admin-search{width:100%;flex-basis:100%}}
+@media(max-width:600px){.admin-category-grid{grid-template-columns:1fr 1fr}.option-row{grid-template-columns:1fr}.admin-actions-row{flex-wrap:wrap}}

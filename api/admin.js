@@ -27,11 +27,13 @@ module.exports=async(req,res)=>{try{
    const q=b.id?await db.from("categories").update(row,{id:"eq."+b.id}):await db.from("categories").insert({...row,slug:slugify(b.name)+"-"+Date.now()});if(q.error)throw q.error;
   } else if(b.type==="product"){
    const images=Array.isArray(b.images)?b.images.filter(Boolean):[];
-   const row={category_id:b.category_id||null,name:b.name,description:b.description||"",image_url:b.image_url||images[0]||"",images,platform:b.platform||"",old_price:Number(b.old_price||0),price:Number(b.price||0),featured:!!b.featured,best_seller:!!b.best_seller,discount_badge:!!b.discount_badge,active:b.active!==false,requires_account_details:!!b.requires_account_details};
+   const row={category_id:b.category_id||null,name:b.name,description:b.description||"",image_url:b.image_url||images[0]||"",images,platform:b.platform||"",old_price:Number(b.old_price||0),price:Number(b.price||0),featured:!!b.featured,best_seller:!!b.best_seller,discount_badge:!!b.discount_badge,active:b.active!==false,requires_account_details:!!b.requires_account_details,
+    sale_price:Number(b.sale_price||0),sale_starts_at:b.sale_starts_at||null,sale_ends_at:b.sale_ends_at||null};
    if(!b.id)row.slug=slugify(b.name)+"-"+Date.now();
    const q=b.id?await db.from("products").update(row,{id:"eq."+b.id}):await db.from("products").insert(row,{returning:"representation"});if(q.error)throw q.error;
    const productId=b.id||q.data?.[0]?.id;
-   if(productId&&Array.isArray(b.options)){const dq=await db.from("product_options").delete({product_id:"eq."+productId});if(dq.error)throw dq.error;for(const o of b.options){const oq=await db.from("product_options").insert({product_id:productId,name:o.name,price:Number(o.price||0),old_price:Number(o.old_price||0),image_url:o.image_url||"",active:o.active!==false,sort_order:Number(o.sort_order||0)});if(oq.error)throw oq.error}}
+   if(productId&&Array.isArray(b.options)){const dq=await db.from("product_options").delete({product_id:"eq."+productId});if(dq.error)throw dq.error;for(const o of b.options){const oq=await db.from("product_options").insert({product_id:productId,name:o.name,price:Number(o.price||0),old_price:Number(o.old_price||0),image_url:o.image_url||"",active:o.active!==false,sort_order:Number(o.sort_order||0),
+      requires_account_details:!!o.requires_account_details,sale_price:Number(o.sale_price||0),sale_starts_at:o.sale_starts_at||null,sale_ends_at:o.sale_ends_at||null});if(oq.error)throw oq.error}}
   } else if(b.type==="option"){
    const q=await db.from("product_options").insert({product_id:b.product_id,name:b.name,price:Number(b.price||0),old_price:Number(b.old_price||0),image_url:b.image_url||"",active:true,sort_order:Number(b.sort_order||0)});if(q.error)throw q.error;
   } else if(b.type==="admin_role"){
@@ -62,6 +64,13 @@ module.exports=async(req,res)=>{try{
  if(req.method==="PATCH"){
   if(b.type==="order"){
     const q=await db.from("orders").update({status:b.status},{id:"eq."+b.id});if(q.error)throw q.error;
+    const oq=await db.from("orders").select("*").eq("id",b.id);
+    const order=oq.data?.[0];
+    if(order){
+      const iq=await db.from("order_items").select("*").eq("order_id",b.id);
+      const adminEmail=await configuredAdminEmail();
+      await sendStoreEmail({action:"order_status",admin_email:adminEmail,customer_email:order.email||"",order,items:iq.data||[]});
+    }
   }
   return json(res,200,{ok:true});
  }

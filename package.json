@@ -1,6 +1,1 @@
-{
-  "name":"flash-store",
-  "version":"32.1.0",
-  "private":true,
-  "engines":{"node":">=18"}
-}
+{"name":"flash-store","version":"39.0.0","private":true,"engines":{"node":">=18"}}

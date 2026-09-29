@@ -18,12 +18,12 @@ module.exports=async(req,res)=>{try{
   ]);
   const failed=[c,pr,d,pay,o,ban,opt,profs,notes,oi].find(x=>x.error);if(failed)throw failed.error;
   const products=pr.data||[], options=opt.data||[], orderItems=oi.data||[], categories=c.data||[];
-  const orders=(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)).map(order=>({...order,requires_delivery_credentials:order.requires_delivery_credentials||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_credentials}),items:orderItems.filter(i=>String(i.order_id)===String(order.id)).map(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));const op=options.find(x=>String(x.id)===String(i.option_id));return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""}})}));
+  const orders=(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)).map(order=>({...order,requires_delivery_credentials:order.requires_delivery_credentials||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_credentials}),requires_delivery_code:order.requires_delivery_code||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_code}),items:orderItems.filter(i=>String(i.order_id)===String(order.id)).map(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));const op=options.find(x=>String(x.id)===String(i.option_id));return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""}})}));
   return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
  }
  if(req.method==="POST"){
   if(b.type==="category"){
-   const row={name:b.name,description:b.description||"",image_url:b.image_url||"",sort_order:Number(b.sort_order||0),active:b.active!==false,requires_delivery_credentials:!!b.requires_delivery_credentials};
+   const row={name:b.name,description:b.description||"",image_url:b.image_url||"",sort_order:Number(b.sort_order||0),active:b.active!==false,requires_delivery_credentials:!!b.requires_delivery_credentials,requires_delivery_code:!!b.requires_delivery_code};
    const q=b.id?await db.from("categories").update(row,{id:"eq."+b.id}):await db.from("categories").insert({...row,slug:slugify(b.name)+"-"+Date.now()});if(q.error)throw q.error;
   } else if(b.type==="product"){
    const images=Array.isArray(b.images)?b.images.filter(Boolean):[];
@@ -63,7 +63,7 @@ module.exports=async(req,res)=>{try{
  }
  if(req.method==="PATCH"){
   if(b.type==="order"){
-    const q=await db.from("orders").update({status:b.status,delivery_email:String(b.delivery_email||''),delivery_password:String(b.delivery_password||'')},{id:"eq."+b.id});if(q.error)throw q.error;
+    const q=await db.from("orders").update({status:b.status,delivery_email:String(b.delivery_email||''),delivery_password:String(b.delivery_password||''),delivery_code:String(b.delivery_code||'')},{id:"eq."+b.id});if(q.error)throw q.error;
     const oq=await db.from("orders").select("*").eq("id",b.id);
     const order=oq.data?.[0];
     if(order){

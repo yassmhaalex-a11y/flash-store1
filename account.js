@@ -3,7 +3,30 @@ function setMode(){const up=mode==="signup";title.textContent=up?"Create Account
 async function checkSession(){const me=await fetch('/api/me').then(r=>r.ok?r.json():null).catch(()=>null);if(!me){setMode();return}auth.style.display='none';logged.style.display='block';logged.innerHTML=`<div class="account-top"><div><span class="eyebrow">SIGNED IN</span><h1>Welcome, ${esc(me.full_name||me.email)}</h1><p class="muted">${esc(me.email)} · ${esc(me.role||'client')}</p></div><button class="small-btn" id="signout">Sign Out</button></div><div class="account-orders" id="orders"><div class="section-head"><div><span class="eyebrow">ORDERS</span><h2>My Orders</h2><p class="muted">Track your order status and payment details.</p></div></div><div id="myOrders"><p class="muted">Loading orders...</p></div></div>`;document.querySelector('#signout').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});location.reload()};loadOrders()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function statusLabel(s){return ({pending:'Pending',paid:'Paid',processing:'Processing',completed:'Completed',cancelled:'Cancelled'}[s]||s)}
-async function loadOrders(){const box=document.querySelector('#myOrders');try{const r=await fetch('/api/orders');const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load orders');box.innerHTML=(d.orders||[]).map(o=>`<div class="my-order"><div><a class="order-open-link" href="/order.html?id=${encodeURIComponent(o.id)}"><b>Order #${esc(o.order_number)}</b></a><span class="badge">${esc(statusLabel(o.status))}</span><div class="muted">${new Date(o.created_at).toLocaleString()} · ${Number(o.total||0).toLocaleString()} EGP · ${esc(o.payment_method)}</div></div><div class="order-progress"><span class="${['pending','paid','processing','completed'].includes(o.status)?'on':''}">Pending</span><span class="${['paid','processing','completed'].includes(o.status)?'on':''}">Payment</span><span class="${['processing','completed'].includes(o.status)?'on':''}">Processing</span><span class="${o.status==='completed'?'on':''}">Completed</span></div></div>`).join('')||'<p class="muted">You have no orders yet.</p>'}catch(e){box.innerHTML=`<p class="muted">${esc(e.message)}</p>`}}
+async function loadOrders(){
+ const box=document.querySelector('#myOrders');
+ try{
+  const r=await fetch('/api/orders',{cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(d.error||'Could not load orders');
+  const orders=d.orders||[];
+  box.innerHTML=orders.map(o=>{
+   const href='/order.html?id='+encodeURIComponent(o.id);
+   const st=String(o.status||'pending');
+   return `<a class="my-order order-open-link" href="${href}">
+    <div class="order-card-head"><div><b>Order #${esc(o.order_number)}</b><span class="badge">${esc(statusLabel(st))}</span></div><b class="order-arrow">→</b></div>
+    <div class="muted">${new Date(o.created_at).toLocaleString()} · ${Number(o.total||0).toLocaleString()} EGP · ${esc(o.payment_method||'')}</div>
+    <div class="order-progress">
+      <span class="${['pending','paid','processing','completed'].includes(st)?'on':''}">Pending</span>
+      <span class="${['paid','processing','completed'].includes(st)?'on':''}">Payment</span>
+      <span class="${['processing','completed'].includes(st)?'on':''}">Processing</span>
+      <span class="${st==='completed'?'on':''}">Completed</span>
+    </div>
+    <div class="muted order-open-hint">Click to open order details</div>
+   </a>`;
+  }).join('')||'<p class="muted">You have no orders yet.</p>';
+ }catch(e){box.innerHTML=`<div class="processing-box"><b>Could not load My Orders</b><p class="muted">${esc(e.message)}</p><button class="small-btn" onclick="loadOrders()">Try Again</button></div>`}
+}
 switchBtn.onclick=()=>{mode=mode==="signin"?"signup":"signin";msg.textContent="";setMode()};document.querySelector('#newAccount').onclick=()=>{mode='signup';setMode();document.querySelector('#email').focus()};document.querySelector('#forgot').onclick=async()=>{const email=document.querySelector('#email').value.trim();if(!email){msg.textContent='Enter your email first, then choose Forgot password.';return}msg.textContent='Sending password reset email...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'forgot',email})});const d=await r.json();msg.textContent=d.message||d.error||''}catch{msg.textContent='Could not send reset email.'}};
 submit.onclick=async()=>{const email=document.querySelector('#email').value.trim(),password=document.querySelector('#password').value,name=document.querySelector('#name').value.trim();if(!email||!password||(mode==='signup'&&!name)){msg.textContent='Please complete all required fields.';return}localStorage.flashLastEmail=email;submit.disabled=true;msg.textContent=mode==='signup'?'Creating account...':'Signing in...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode,email,password,full_name:name})});const d=await r.json().catch(()=>({}));if(!r.ok){msg.innerHTML=`${esc(d.error||'Sign in failed.')} <button class="link-btn inline" onclick="document.querySelector('#newAccount').click()">Create new account</button> <button class="link-btn inline" onclick="document.querySelector('#forgot').click()">Forgot password</button>`;return}msg.textContent=d.message||'';const ret=new URLSearchParams(location.search).get('return');setTimeout(()=>location.href=ret||d.redirect||'/account.html',250)}catch(e){msg.textContent='Connection error. Please try again.'}finally{submit.disabled=false}};
 const last=localStorage.flashLastEmail;if(last)document.querySelector('#email').value=last;setMode();checkSession();

@@ -29,11 +29,40 @@ module.exports=async(req,res)=>{
   const db=supabase();
 
   if(req.method==="GET"){
-   const requestedId=String((req.query&&req.query.id)||''); const q=await db.from("orders").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
+   const requestedId=String((req.query&&req.query.id)||'');
+   const q=await db.from("orders").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
    if(q.error)throw q.error;
-   let orders=q.data||[]; if(requestedId) orders=orders.filter(o=>String(o.id)===requestedId); const ids=orders.map(o=>o.id);let items=[];
-   if(ids.length){const iq=await db.from("order_items").select("*");if(iq.error)throw iq.error;items=(iq.data||[]).filter(i=>ids.includes(i.order_id)); const pids=[...new Set(items.map(i=>i.product_id).filter(Boolean))]; if(pids.length){const pq=await db.from('products').select('id,category_id');if(pq.error)throw pq.error;const catsQ=await db.from('categories').select('id,requires_delivery_credentials,requires_delivery_code');if(catsQ.error)throw catsQ.error;const pm=new Map((pq.data||[]).map(x=>[String(x.id),x]));const cm=new Map((catsQ.data||[]).map(x=>[String(x.id),{email:!!x.requires_delivery_credentials,code:!!x.requires_delivery_code}])); orders=orders.map(o=>{const os=items.filter(i=>i.order_id===o.id).map(i=>cm.get(String(pm.get(String(i.product_id))?.category_id))||{});return {...o,requires_delivery_credentials:!!o.requires_delivery_credentials||os.some(x=>x.email),requires_delivery_code:!!o.requires_delivery_code||os.some(x=>x.code)}})}}
-   return json(res,200,{orders:orders.map(o=>({...o,items:items.filter(i=>i.order_id===o.id)}))});
+   let orders=q.data||[];
+   if(requestedId) orders=orders.filter(o=>String(o.id)===requestedId);
+   if(!orders.length) return json(res,404,{error:"Order not found."});
+   const ids=orders.map(o=>String(o.id));
+   const iq=await db.from("order_items").select("*");
+   if(iq.error)throw iq.error;
+   const items=(iq.data||[]).filter(i=>ids.includes(String(i.order_id)));
+   const productsQ=await db.from("products").select("*");
+   if(productsQ.error)throw productsQ.error;
+   const optionsQ=await db.from("product_options").select("*");
+   if(optionsQ.error)throw optionsQ.error;
+   const catsQ=await db.from("categories").select("id,requires_delivery_credentials,requires_delivery_code");
+   if(catsQ.error)throw catsQ.error;
+   const products=productsQ.data||[], options=optionsQ.data||[], cats=catsQ.data||[];
+   const productMap=new Map(products.map(x=>[String(x.id),x]));
+   const optionMap=new Map(options.map(x=>[String(x.id),x]));
+   const catMap=new Map(cats.map(x=>[String(x.id),x]));
+   const result=orders.map(o=>{
+    const its=items.filter(i=>String(i.order_id)===String(o.id)).map(i=>{
+      const p=productMap.get(String(i.product_id));
+      const op=optionMap.get(String(i.option_id));
+      return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""};
+    });
+    const flags=its.map(i=>catMap.get(String(productMap.get(String(i.product_id))?.category_id))||{});
+    return {...o,
+      requires_delivery_credentials:!!o.requires_delivery_credentials||flags.some(c=>!!c.requires_delivery_credentials),
+      requires_delivery_code:!!o.requires_delivery_code||flags.some(c=>!!c.requires_delivery_code),
+      items:its
+    };
+   });
+   return json(res,200,{orders:result});
   }
 
   if(req.method!=="POST")return json(res,405,{error:"Method not allowed"});

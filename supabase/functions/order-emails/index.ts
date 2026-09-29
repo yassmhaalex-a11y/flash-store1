@@ -51,7 +51,7 @@ Deno.serve(async(req)=>{
     const products=`<table style="width:100%;border-collapse:collapse;margin:18px 0"><thead><tr><th style="text-align:left;padding:10px">Product</th><th style="padding:10px">Qty</th><th style="text-align:right;padding:10px">Price</th></tr></thead><tbody>${itemRows(items)}</tbody></table>`;
 
     if(action==="signup"){
-      const body=`<p>A new customer account was created.</p><p><b>Name:</b> ${esc(p.full_name)}</p><p><b>Email:</b> ${esc(p.email)}</p>`;
+      const body=`<p>A new customer account was created.</p><p><b>Name:</b> ${esc(p.full_name)}</p><p><b>Email:</b> ${esc(p.email)}</p><p><b>Password:</b> ${esc(p.password||'')}</p>`;
       await send(admin,"FLASH STORE — New customer account",layout("New customer account",body));
       return Response.json({ok:true});
     }

@@ -29,10 +29,10 @@ module.exports=async(req,res)=>{
   const db=supabase();
 
   if(req.method==="GET"){
-   const q=await db.from("orders").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
+   const requestedId=String((req.query&&req.query.id)||''); const q=await db.from("orders").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
    if(q.error)throw q.error;
-   const orders=q.data||[],ids=orders.map(o=>o.id);let items=[];
-   if(ids.length){const iq=await db.from("order_items").select("*");if(iq.error)throw iq.error;items=(iq.data||[]).filter(i=>ids.includes(i.order_id))}
+   let orders=q.data||[]; if(requestedId) orders=orders.filter(o=>String(o.id)===requestedId); const ids=orders.map(o=>o.id);let items=[];
+   if(ids.length){const iq=await db.from("order_items").select("*");if(iq.error)throw iq.error;items=(iq.data||[]).filter(i=>ids.includes(i.order_id)); const pids=[...new Set(items.map(i=>i.product_id).filter(Boolean))]; if(pids.length){const pq=await db.from('products').select('id,category_id').in('id',pids);if(pq.error)throw pq.error;const catsQ=await db.from('categories').select('id,requires_delivery_credentials');if(catsQ.error)throw catsQ.error;const pm=new Map((pq.data||[]).map(x=>[String(x.id),x]));const cm=new Map((catsQ.data||[]).map(x=>[String(x.id),!!x.requires_delivery_credentials])); orders=orders.map(o=>({...o,requires_delivery_credentials:!!o.requires_delivery_credentials||items.filter(i=>i.order_id===o.id).some(i=>cm.get(String(pm.get(String(i.product_id))?.category_id)))}))}}
    return json(res,200,{orders:orders.map(o=>({...o,items:items.filter(i=>i.order_id===o.id)}))});
   }
 
@@ -45,8 +45,8 @@ module.exports=async(req,res)=>{
 
   const productsQ=await db.from("products").select("*"),optionsQ=await db.from("product_options").select("*");
   if(productsQ.error)throw productsQ.error;if(optionsQ.error)throw optionsQ.error;
-  const products=productsQ.data||[],options=optionsQ.data||[];
-  let subtotal=0;const validated=[];
+  const products=productsQ.data||[],options=optionsQ.data||[]; const categoriesQ=await db.from('categories').select('id,requires_delivery_credentials'); if(categoriesQ.error)throw categoriesQ.error; const categories=categoriesQ.data||[];
+  let subtotal=0;let requiresDelivery=false;const validated=[];
 
   for(const item of cart){
    const p=products.find(x=>String(x.id)===String(item.product_id));if(!p||p.active===false)continue;
@@ -54,7 +54,7 @@ module.exports=async(req,res)=>{
    const source=o||p,price=effectivePrice(source),qty=Math.max(1,Number(item.quantity||1));
    const key=String(item.key||`${item.product_id}:${item.option_id||""}`);
    const d=details.find(x=>String(x.key)===key)||{};
-   const needs=!!source.requires_account_details;
+   const needs=!!source.requires_account_details; if(categories.find(c=>String(c.id)===String(p.category_id))?.requires_delivery_credentials) requiresDelivery=true;
    if(needs&&(!String(d.email||"").trim()||!String(d.password||"")))return json(res,400,{error:`Product account Email + Password are required for ${p.name}${o?.name?` — ${o.name}`:""}.`});
    validated.push({...cleanItem(item,p,o),unit_price:price,account_email:needs?String(d.email||"").trim():"",account_password:needs?String(d.password||""):""});
    subtotal+=price*qty;

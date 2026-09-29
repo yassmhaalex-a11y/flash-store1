@@ -75,7 +75,7 @@ module.exports=async(req,res)=>{
       }catch(_){ }
       try{
         const adminEmail=await configuredAdminEmail();
-        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email});
+        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email,password});
       }catch(e){console.error('Signup email error:',e.message)}
 
       // Sign in through the normal token endpoint so the browser gets the same session cookie as existing users.

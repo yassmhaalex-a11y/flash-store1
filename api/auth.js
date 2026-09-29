@@ -22,6 +22,23 @@ module.exports=async(req,res)=>{
     const root=env('SUPABASE_URL').replace(/\/rest\/v1\/?$/,'');
 
     if(req.method==='DELETE'){
+      const token=cookieToken(req);
+      let user=null;
+      if(token){
+        try{ user=await authUser(root,token); }catch(_){ user=null; }
+      }
+      try{
+        const adminEmail=await configuredAdminEmail();
+        if(adminEmail && user?.email){
+          await sendStoreEmail({
+            action:'auth_event',
+            admin_email:adminEmail,
+            event:'signed_out',
+            email:user.email,
+            full_name:user.user_metadata?.full_name||''
+          });
+        }
+      }catch(e){ console.error('Signout email error:',e.message); }
       res.setHeader('Set-Cookie','flash_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure');
       return json(res,200,{ok:true});
     }
@@ -112,6 +129,18 @@ module.exports=async(req,res)=>{
         const notConfirmed=/not confirmed|email.*confirm/i.test(raw);
         return json(res,r.status,{error:notConfirmed?'Please verify your email before signing in.':raw||'Email or password is incorrect. Use Forgot password or Create new account.'});
       }
+      try{
+        const adminEmail=await configuredAdminEmail();
+        if(adminEmail){
+          await sendStoreEmail({
+            action:'auth_event',
+            admin_email:adminEmail,
+            event:'signed_in',
+            email,
+            full_name:d.user?.user_metadata?.full_name||''
+          });
+        }
+      }catch(e){ console.error('Signin email error:',e.message); }
       setSession(res,d.access_token);
       return json(res,200,{message:'Signed in.',redirect:'/'});
     }

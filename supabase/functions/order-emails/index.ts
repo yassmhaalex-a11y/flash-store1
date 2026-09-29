@@ -56,6 +56,14 @@ Deno.serve(async(req)=>{
       return Response.json({ok:true});
     }
 
+    if(action==="auth_event"){
+      const event=String(p.event||"");
+      const label=event==="signed_in"?"Signed in":"Signed out";
+      const body=`<p><b>${esc(p.email||"")}</b> ${event==="signed_in"?"signed in to FLASH STORE.":"signed out of FLASH STORE."}</p>${p.full_name?`<p><b>Name:</b> ${esc(p.full_name)}</p>`:""}`;
+      await send(admin,`FLASH STORE — ${label}: ${String(p.email||"")}`,layout(`Customer ${label}`,body));
+      return Response.json({ok:true});
+    }
+
     const body=`<p><b>Order #${esc(orderNo)}</b></p>
       ${products}
       <p>Subtotal: <b>${money(order.subtotal)}</b></p>

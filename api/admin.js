@@ -54,7 +54,13 @@ module.exports=async(req,res)=>{try{
   } else if(b.type==="settings"){
    const q=await db.from("store_settings").update({store_name:b.store_name||"FLASH STORE",logo_url:b.logo_url||"",about_title:b.about_title||"About FLASH STORE",about_text:b.about_text||"",whatsapp:b.whatsapp||"",support_title:b.support_title||"Support",support_text:b.support_text||"Need help? Contact us on WhatsApp.",admin_email:String(b.admin_email||"").trim().toLowerCase(),updated_at:new Date().toISOString()},{id:"eq.1"});if(q.error)throw q.error;
   } else if(b.type==="discount"){
-   const q=await db.from("discounts").insert({code:b.code,value:Number(b.value),kind:b.kind||"percent",scope:b.scope||"all",first_order_only:!!b.first_order_only,one_use_per_user:!!b.one_use_per_user,max_uses:b.max_uses?Number(b.max_uses):null,active:true});if(q.error)throw q.error;
+   const scope=['all','products','categories'].includes(b.scope)?b.scope:'all';
+   const targets=[...new Set((Array.isArray(b.target_ids)?b.target_ids:[]).filter(x=>typeof x==='string'&&x.length>0))];
+   if(scope!=='all'&&!targets.length)return json(res,400,{error:'Select at least one eligible product or category'});
+   if(scope!=='all'){const table=scope==='products'?'products':'categories';const check=await db.from(table).select('id');if(check.error)throw check.error;const valid=new Set((check.data||[]).map(x=>String(x.id)));if(targets.some(id=>!valid.has(id)))return json(res,400,{error:'One or more selected items no longer exist'});}
+   const q=await db.from("discounts").insert({code:b.code,value:Number(b.value),kind:b.kind||"percent",scope,first_order_only:!!b.first_order_only,one_use_per_user:!!b.one_use_per_user,max_uses:b.max_uses?Number(b.max_uses):null,active:true},{returning:'representation'});if(q.error)throw q.error;
+   const id=q.data?.[0]?.id;if(!id)throw Error('Could not read newly created discount ID');
+   if(scope!=='all'){const table=scope==='products'?'discount_products':'discount_categories';const key=scope==='products'?'product_id':'category_id';for(const target of targets){const link=await db.from(table).insert({discount_id:id,[key]:target});if(link.error){await db.from('discounts').delete({id:'eq.'+id});throw link.error}}}
   } else if(b.type==="notification_read"){
    const q=await db.from("notifications").update({read:true},{id:"eq."+b.id});if(q.error)throw q.error;
   } else if(b.type==="notifications_read_all"){

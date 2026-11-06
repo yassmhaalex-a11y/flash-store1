@@ -1,1 +1,3 @@
 Hobby deployment fix v2: Shared modules _lib.js and _pricing.js were moved OUTSIDE api/ into lib/. Vercel may count every JS file in api/ as a function, including underscore-prefixed helpers. There are now exactly 12 JavaScript endpoint files under api/. The /api/me rewrite continues to route to /api/auth?mode=me. No database changes required for this correction.
+
+V45 Hobby Fix V3: moved email helper from api/email.js to lib/email.js. This leaves 11 API endpoints. No database migration needed for this fix.

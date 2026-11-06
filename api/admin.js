@@ -1,5 +1,5 @@
 const {json,env,supabase,getCookie,verifyAdminToken,readBody}=require("../lib/_lib");
-const {sendStoreEmail}=require("./email");
+const {sendStoreEmail}=require("../lib/email");
 async function configuredAdminEmail(){try{const q=await supabase().from("store_settings").select("admin_email").eq("id",1);return q.data?.[0]?.admin_email||env("ADMIN_EMAIL")||""}catch(_){return env("ADMIN_EMAIL")||""}}
 async function getUser(req){
   const adminToken=verifyAdminToken(getCookie(req,"flash_admin"));

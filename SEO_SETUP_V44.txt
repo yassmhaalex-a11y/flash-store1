@@ -1,0 +1,10 @@
+FLASH STORE V44 - GOOGLE SEARCH SEO
+
+1. Upload all files to the same GitHub repo as your existing V43 site. Keep the Google verification HTML file already in the repo.
+2. Wait for Vercel deployment.
+3. Open https://flash-store1.vercel.app/sitemap.xml and https://flash-store1.vercel.app/robots.txt to verify.
+4. In Google Search Console > Sitemaps, enter sitemap.xml and submit.
+5. Search indexing is not guaranteed; can take days/weeks.
+
+Sitemap includes the homepage only. Product/category pages have dynamic query-string IDs; do not add invented URLs. For comprehensive product indexing, a later dynamic sitemap should read public product/category IDs from the database.
+No database migrations needed. No admin/order code changed.

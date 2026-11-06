@@ -15,16 +15,19 @@ module.exports=async(req,res)=>{try{
  const u=await getUser(req);if(!u)return json(res,401,{error:"Admin login required"});const db=supabase();
  if(!u.adminSession){const prof=await db.from("profiles").select("*");const p=(prof.data||[]).find(x=>x.id===u.id);if(!p||p.role!=="admin")return json(res,403,{error:"Admin access required"});}
  if(req.method==="GET"){
-  const [c,pr,d,pay,o,ban,opt,profs,notes,oi,settings]=await Promise.all([
-   db.from("categories").select("*"),db.from("products").select("*"),db.from("discounts").select("*"),db.from("payment_methods").select("*"),db.from("orders").select("*"),db.from("hero_banners").select("*"),db.from("product_options").select("*"),db.from("profiles").select("*"),db.from("notifications").select("*"),db.from("order_items").select("*"),db.from("store_settings").select("*")
+  const [c,pr,d,pay,o,ban,opt,profs,notes,oi,settings,reviews,requests,features]=await Promise.all([
+   db.from("categories").select("*"),db.from("products").select("*"),db.from("discounts").select("*"),db.from("payment_methods").select("*"),db.from("orders").select("*"),db.from("hero_banners").select("*"),db.from("product_options").select("*"),db.from("profiles").select("*"),db.from("notifications").select("*"),db.from("order_items").select("*"),db.from("store_settings").select("*"),db.from("store_reviews").select("*").order("created_at",{ascending:false}),db.from("game_requests").select("*").order("created_at",{ascending:false}),db.from("store_features").select("*").eq("id",1)
   ]);
-  const failed=[c,pr,d,pay,o,ban,opt,profs,notes,oi].find(x=>x.error);if(failed)throw failed.error;
+  const failed=[c,pr,d,pay,o,ban,opt,profs,notes,oi,reviews,requests,features].find(x=>x.error);if(failed)throw failed.error;
   const products=pr.data||[], options=opt.data||[], orderItems=oi.data||[], categories=c.data||[];
   const orders=(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)).map(order=>({...order,requires_delivery_credentials:order.requires_delivery_credentials||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_credentials}),requires_delivery_code:order.requires_delivery_code||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_code}),items:orderItems.filter(i=>String(i.order_id)===String(order.id)).map(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));const op=options.find(x=>String(x.id)===String(i.option_id));return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""}})}));
-  return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
+  return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,reviews:reviews.data||[],game_requests:requests.data||[],features:features.data?.[0]||{},notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
  }
  if(req.method==="POST"){
-  if(b.type==="category"){
+  if(b.type==="review_moderate") {if(!['approve','hide','delete'].includes(b.action))return json(res,400,{error:'Invalid action'});const q=b.action==='delete'?await db.from('store_reviews').delete({id:'eq.'+b.id}):await db.from('store_reviews').update({approved:b.action==='approve'},{id:'eq.'+b.id});if(q.error)throw q.error;
+  } else if(b.type==="reviews_toggle") {const q=await db.from('store_features').update({reviews_enabled:!!b.enabled},{id:'eq.1'});if(q.error)throw q.error;
+  } else if(b.type==="game_request_status") {if(!['processing','completed','canceled'].includes(b.status))return json(res,400,{error:'Invalid status'});const q=await db.from('game_requests').update({status:b.status},{id:'eq.'+b.id});if(q.error)throw q.error;
+  } else if(b.type==="category"){
    const row={name:b.name,description:b.description||"",image_url:b.image_url||"",sort_order:Number(b.sort_order||0),active:b.active!==false,requires_delivery_credentials:!!b.requires_delivery_credentials,requires_delivery_code:!!b.requires_delivery_code};
    const q=b.id?await db.from("categories").update(row,{id:"eq."+b.id}):await db.from("categories").insert({...row,slug:slugify(b.name)+"-"+Date.now()});if(q.error)throw q.error;
   } else if(b.type==="product"){

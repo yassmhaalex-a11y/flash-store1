@@ -1,6 +1,7 @@
 const {json,env,supabase,readBody}=require('./_lib');
 async function configuredAdminEmail(){ try{ const q=await supabase().from('store_settings').select('admin_email').eq('id',1); return q.data?.[0]?.admin_email||env('ADMIN_EMAIL')||''; }catch(_){ return env('ADMIN_EMAIL')||''; } }
 const {sendStoreEmail}=require('./email');
+function publicOrigin(req){const configured=env('PUBLIC_SITE_URL');if(configured){try{const u=new URL(configured);if(u.protocol==='https:')return u.origin}catch(_){}}const host=String(req.headers.host||'');if(!/^[a-z0-9.-]+(?::[0-9]+)?$/i.test(host)||/^(localhost|127\.0\.0\.1)(:|$)/i.test(host))throw Error('Set PUBLIC_SITE_URL to your live HTTPS store URL');return 'https://'+host}
 
 function cookieToken(req){
   const c=req.headers.cookie||'';
@@ -51,7 +52,7 @@ module.exports=async(req,res)=>{
       if(!email)return json(res,400,{error:'Enter your email first.'});
       const r=await fetch(root+'/auth/v1/recover',{
         method:'POST',headers:{apikey:env('SUPABASE_ANON_KEY'),'Content-Type':'application/json'},
-        body:JSON.stringify({email,redirect_to:`${(req.headers['x-forwarded-proto']||'https')}://${req.headers.host}/reset-password.html`})
+        body:JSON.stringify({email,redirect_to:`${publicOrigin(req)}/reset-password.html`})
       });
       const d=await r.json().catch(()=>({}));
       if(!r.ok)return json(res,r.status,{error:d.msg||d.error_description||'Could not send reset email.'});
@@ -92,7 +93,7 @@ module.exports=async(req,res)=>{
       }catch(_){ }
       try{
         const adminEmail=await configuredAdminEmail();
-        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email,password});
+        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email});
       }catch(e){console.error('Signup email error:',e.message)}
 
       // Sign in through the normal token endpoint so the browser gets the same session cookie as existing users.

@@ -24,7 +24,8 @@ module.exports=async(req,res)=>{try{
   return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,reviews:reviews.data||[],game_requests:requests.data||[],features:features.data?.[0]||{},notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
  }
  if(req.method==="POST"){
-  if(b.type==="review_moderate") {if(!['approve','hide','delete'].includes(b.action))return json(res,400,{error:'Invalid action'});const q=b.action==='delete'?await db.from('store_reviews').delete({id:'eq.'+b.id}):await db.from('store_reviews').update({approved:b.action==='approve'},{id:'eq.'+b.id});if(q.error)throw q.error;
+  if(b.type==="feature_toggle") {if(!['stars_enabled','game_popup_enabled'].includes(b.field))return json(res,400,{error:'Invalid feature'});const q=await db.from('store_features').update({[b.field]:!!b.enabled},{id:'eq.1'});if(q.error)throw q.error;
+   } else if(b.type==="review_moderate") {if(!['approve','hide','delete'].includes(b.action))return json(res,400,{error:'Invalid action'});const q=b.action==='delete'?await db.from('store_reviews').delete({id:'eq.'+b.id}):await db.from('store_reviews').update({approved:b.action==='approve'},{id:'eq.'+b.id});if(q.error)throw q.error;
   } else if(b.type==="reviews_toggle") {const q=await db.from('store_features').update({reviews_enabled:!!b.enabled},{id:'eq.1'});if(q.error)throw q.error;
   } else if(b.type==="game_request_status") {if(!['processing','completed','canceled'].includes(b.status))return json(res,400,{error:'Invalid status'});const q=await db.from('game_requests').update({status:b.status},{id:'eq.'+b.id});if(q.error)throw q.error;
   } else if(b.type==="category"){

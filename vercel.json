@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/me",
+      "destination": "/api/auth?mode=me"
+    }
+  ]
+}

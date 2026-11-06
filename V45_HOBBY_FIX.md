@@ -1,0 +1,1 @@
+V45 Hobby fix: merged /api/me into /api/auth using a Vercel rewrite. Removed api/me.js. API endpoints remain unchanged for frontend callers. 12 deployed serverless functions. No SQL migration required specifically for this fix.

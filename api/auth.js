@@ -22,6 +22,18 @@ module.exports=async(req,res)=>{
   try{
     const root=env('SUPABASE_URL').replace(/\/rest\/v1\/?$/,'');
 
+    // Consolidated /api/me endpoint to stay within Vercel Hobby's 12-function limit.
+    if(req.method==='GET' && (req.query?.mode==='me' || new URL(req.url,'https://localhost').searchParams.get('mode')==='me')){
+      const token=cookieToken(req);
+      if(!token)return json(res,401,{error:'Not signed in'});
+      const user=await authUser(root,token);
+      if(!user)return json(res,401,{error:'Session expired'});
+      const q=await supabase().from('profiles').select('*').eq('id',user.id);
+      if(q.error)throw q.error;
+      const profile=q.data?.[0];
+      return json(res,200,{id:user.id,email:user.email,role:profile?.role||'client',full_name:profile?.full_name||user.user_metadata?.full_name||''});
+    }
+
     if(req.method==='DELETE'){
       const token=cookieToken(req);
       let user=null;

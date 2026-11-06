@@ -1,4 +1,4 @@
-const {env}=require("./_lib");
+const {env}=require("../lib/_lib");
 
 async function sendStoreEmail(payload){
   const root=env("SUPABASE_URL").replace(/\/rest\/v1\/?$/,"");

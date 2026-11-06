@@ -1,4 +1,4 @@
-const {json,env,supabase,readBody}=require('./_lib');
+const {json,env,supabase,readBody}=require('../lib/_lib');
 async function configuredAdminEmail(){ try{ const q=await supabase().from('store_settings').select('admin_email').eq('id',1); return q.data?.[0]?.admin_email||env('ADMIN_EMAIL')||''; }catch(_){ return env('ADMIN_EMAIL')||''; } }
 const {sendStoreEmail}=require('./email');
 function publicOrigin(req){const configured=env('PUBLIC_SITE_URL');if(configured){try{const u=new URL(configured);if(u.protocol==='https:')return u.origin}catch(_){}}const host=String(req.headers.host||'');if(!/^[a-z0-9.-]+(?::[0-9]+)?$/i.test(host)||/^(localhost|127\.0\.0\.1)(:|$)/i.test(host))throw Error('Set PUBLIC_SITE_URL to your live HTTPS store URL');return 'https://'+host}

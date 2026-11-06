@@ -1,4 +1,4 @@
-const {json,env,makeAdminToken,readBody}=require("./_lib");
+const {json,env,makeAdminToken,readBody}=require("../lib/_lib");
 module.exports=async(req,res)=>{
   if(req.method!=="POST") return json(res,405,{error:"Method not allowed"});
   try{

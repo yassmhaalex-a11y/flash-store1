@@ -1,4 +1,4 @@
-const {json,supabase,readBody}=require('./_lib');
+const {json,supabase,readBody}=require('../lib/_lib');
 module.exports=async(req,res)=>{try{const db=supabase();const f=await db.from('store_features').select('*').eq('id',1);if(f.error)throw f.error;const enabled=f.data?.[0]?.reviews_enabled!==false;
 if(req.method==='GET'){const q=await db.from('store_reviews').select('id,display_name,rating,comment,created_at').eq('approved',true).order('created_at',{ascending:false}).limit(100);if(q.error)throw q.error;const rows=q.data||[];return json(res,200,{enabled,reviews:rows,average:rows.length?Math.round(rows.reduce((s,r)=>s+r.rating,0)/rows.length*10)/10:0,count:rows.length});}
 if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});if(!enabled)return json(res,403,{error:'Reviews disabled'});

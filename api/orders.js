@@ -1,5 +1,5 @@
-const {json,env,supabase,readBody}=require("./_lib");
-const {effectivePrice}=require("./_pricing");
+const {json,env,supabase,readBody}=require("../lib/_lib");
+const {effectivePrice}=require("../lib/_pricing");
 const {sendStoreEmail}=require("./email");
 
 async function configuredAdminEmail(){

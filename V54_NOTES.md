@@ -1,0 +1,1 @@
+V54: Restored V49 regular Orders list and existing Details modal. Game Requests now use Details cards and a modal with customer, contact, game, notes, status, and Save Status. V53 review/stars features retained. Test after deployment.

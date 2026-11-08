@@ -114,3 +114,13 @@
 
 /* V52: keep the review progress stars visible on small phones */
 @media(max-width:700px){.header-main{display:flex!important;flex-wrap:wrap;justify-content:flex-start!important;gap:8px}.header-main .brand{flex:1 1 auto!important;text-align:left!important;font-size:clamp(13px,4vw,17px);white-space:nowrap}.header-main .header-actions{display:flex!important;align-items:center;flex:0 0 auto;gap:5px;margin-left:auto}.header-main #flashRating{display:inline-block!important;font-size:clamp(13px,3.6vw,17px)!important;min-width:5.6em!important;letter-spacing:0!important}.header-main #flashRating[hidden]{display:none!important}.header-main .header-actions a:not(#flashRating){display:none!important}}
+
+/* V53 review presentation */
+.flash-review-back{display:inline-flex!important;align-items:center;justify-content:center;text-decoration:none!important;margin:10px 0 20px;padding:12px 18px;border-radius:12px;background:linear-gradient(110deg,#ff3b30,#ffb000)!important;color:white!important;font-weight:800}
+.v45-page .v45-review{padding:17px 20px;border:1px solid #2d3341;border-radius:14px;background:#131824;margin:12px 0}
+.v45-page #reviewSummary{color:#ffbc00}
+.review-thanks-overlay:not([hidden]){position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:20px}
+.review-thanks-card{max-width:460px;width:100%;border:1px solid #373c4b;background:#141923;color:#f8f9ff;padding:30px;border-radius:20px;text-align:center;box-shadow:0 20px 70px #0009}
+.review-thanks-card .btn{display:block;margin:12px auto;padding:13px 18px;border-radius:12px;text-decoration:none;background:linear-gradient(110deg,#ff3b30,#ffb000);color:white;border:0;font-weight:800;cursor:pointer}
+.review-thanks-card .review-thanks-secondary{background:#282f3c;color:#fff}.review-thanks-icon{font-size:48px;color:#ffbd00}
+.review-stars-setting{margin:16px 0;padding:14px;border:1px solid var(--admin-border);border-radius:12px}.review-stars-setting input{width:100%;accent-color:#ffb000}.review-stars-setting output{font-size:22px;font-weight:800;color:#ffb000}

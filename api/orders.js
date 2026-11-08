@@ -81,6 +81,7 @@ module.exports=async(req,res)=>{
    const p=products.find(x=>String(x.id)===String(item.product_id));if(!p||p.active===false)continue;
    const o=item.option_id?options.find(x=>String(x.id)===String(item.option_id)&&String(x.product_id)===String(p.id)):null;
    const source=o||p,price=effectivePrice(source),qty=Math.max(1,Number(item.quantity||1));
+   if(source.stock_quantity!==null&&source.stock_quantity!==undefined&&Number(source.stock_quantity)<qty)return json(res,409,{error:`Out of stock: ${p.name}${o?.name?' — '+o.name:''}`});
    const key=String(item.key||`${item.product_id}:${item.option_id||""}`);
    const d=details.find(x=>String(x.key)===key)||{};
    const needs=!!source.requires_account_details; const cat=categories.find(c=>String(c.id)===String(p.category_id)); if(cat?.requires_delivery_credentials) requiresDelivery=true; if(cat?.requires_delivery_code) requiresDeliveryCode=true;

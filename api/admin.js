@@ -39,8 +39,13 @@ module.exports=async(req,res)=>{try{
    if(!b.id)row.slug=slugify(b.name)+"-"+Date.now();
    const q=b.id?await db.from("products").update(row,{id:"eq."+b.id}):await db.from("products").insert(row,{returning:"representation"});if(q.error)throw q.error;
    const productId=b.id||q.data?.[0]?.id;
-   if(productId&&Array.isArray(b.options)){const dq=await db.from("product_options").delete({product_id:"eq."+productId});if(dq.error)throw dq.error;for(const o of b.options){const oq=await db.from("product_options").insert({product_id:productId,name:o.name,price:Number(o.price||0),old_price:Number(o.old_price||0),image_url:o.image_url||"",active:o.active!==false,sort_order:Number(o.sort_order||0),
-      requires_account_details:!!o.requires_account_details,sale_price:Number(o.sale_price||0),sale_starts_at:o.sale_starts_at||null,sale_ends_at:o.sale_ends_at||null});if(oq.error)throw oq.error}}
+   if(productId&&Array.isArray(b.options)){const existing=await db.from('product_options').select('*').eq('product_id',productId);if(existing.error)throw existing.error;const old=existing.data||[];const used=new Set();for(const o of b.options){const row={product_id:productId,name:o.name,price:Number(o.price||0),old_price:Number(o.old_price||0),image_url:o.image_url||'',active:o.active!==false,sort_order:Number(o.sort_order||0),requires_account_details:!!o.requires_account_details,sale_price:Number(o.sale_price||0),sale_starts_at:o.sale_starts_at||null,sale_ends_at:o.sale_ends_at||null};const match=old.find(x=>String(x.id)===String(o.id))||old.find(x=>!used.has(String(x.id))&&x.name===o.name);if(match){used.add(String(match.id));const oq=await db.from('product_options').update(row,{id:'eq.'+match.id});if(oq.error)throw oq.error;}else{const oq=await db.from('product_options').insert(row);if(oq.error)throw oq.error;}}for(const prev of old){if(!used.has(String(prev.id))){const oq=await db.from('product_options').update({active:false},{id:'eq.'+prev.id});if(oq.error)throw oq.error;}}}
+  } else if(b.type==='stock_update'){
+   const table=b.option_id?'product_options':'products',id=b.option_id||b.product_id;
+   if(!id)return json(res,400,{error:'Missing product'});
+   const qty=b.unlimited?null:Number(b.quantity);
+   if(qty!==null&&(!Number.isSafeInteger(qty)||qty<0))return json(res,400,{error:'Stock must be a nonnegative integer'});
+   const q=await db.from(table).update({stock_quantity:qty},{id:'eq.'+id});if(q.error)throw q.error;
   } else if(b.type==="option"){
    const q=await db.from("product_options").insert({product_id:b.product_id,name:b.name,price:Number(b.price||0),old_price:Number(b.old_price||0),image_url:b.image_url||"",active:true,sort_order:Number(b.sort_order||0)});if(q.error)throw q.error;
   } else if(b.type==="admin_role"){
@@ -77,13 +82,16 @@ module.exports=async(req,res)=>{try{
  }
  if(req.method==="PATCH"){
   if(b.type==="order"){
-    const q=await db.from("orders").update({status:b.status,delivery_email:String(b.delivery_email||''),delivery_password:String(b.delivery_password||''),delivery_code:String(b.delivery_code||'')},{id:"eq."+b.id});if(q.error)throw q.error;
+    const before=await db.from('orders').select('*').eq('id',b.id);if(before.error)throw before.error;const previous=before.data?.[0];if(!previous)return json(res,404,{error:'Order not found'});
+    const nextStatus=b.status||previous.status;
+    if(nextStatus!==previous.status){const changed=await db.rpc('flash_change_order_status',{p_order_id:b.id,p_status:nextStatus});if(changed.error)throw changed.error;}
+    if(b.delivery_email!==undefined||b.delivery_password!==undefined||b.delivery_code!==undefined){const details={};if(b.delivery_email!==undefined)details.delivery_email=String(b.delivery_email);if(b.delivery_password!==undefined)details.delivery_password=String(b.delivery_password);if(b.delivery_code!==undefined)details.delivery_code=String(b.delivery_code);const upd=await db.from('orders').update(details,{id:'eq.'+b.id});if(upd.error)throw upd.error;}
     const oq=await db.from("orders").select("*").eq("id",b.id);
     const order=oq.data?.[0];
     if(order){
       const iq=await db.from("order_items").select("*").eq("order_id",b.id);
       const adminEmail=await configuredAdminEmail();
-      await sendStoreEmail({action:"order_status",admin_email:adminEmail,customer_email:order.email||"",order,items:iq.data||[]});
+      if(previous.status!==order.status) await sendStoreEmail({action:"order_status",admin_email:adminEmail,customer_email:order.email||"",order,items:iq.data||[]});
     }
   }
   return json(res,200,{ok:true});

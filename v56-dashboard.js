@@ -1,0 +1,12 @@
+/* V56 navigation: home dashboard -> isolated management section. Existing admin handlers remain intact. */
+(()=>{const home=document.getElementById('v56AdminHome'),tiles=document.getElementById('v56AdminTiles'),crumb=document.getElementById('v56AdminBreadcrumb'),back=document.getElementById('v56AdminBack'),tabs=document.getElementById('tabs');if(!home||!tabs)return;
+const icons={products:'🎮',categories:'🗂️',payments:'💳',banners:'🖼️',discounts:'🏷️',settings:'⚙️',admins:'🔐',notifications:'🔔',orders:'📦',analytics:'📊',stock:'📋',reviews:'⭐','game-requests':'🎯'};
+const descriptions={products:'Manage games, prices and options',categories:'Organize your product categories',payments:'Edit available payment methods',banners:'Manage homepage promotions',discounts:'Create and review offers',settings:'Customize store settings',admins:'Manage admin access',notifications:'Review store alerts',orders:'Manage customer orders',analytics:'View sales and performance',stock:'Check and update inventory',reviews:'Moderate customer feedback','game-requests':'Review requested games'};
+const buttons=[...tabs.querySelectorAll('button[data-tab]')];
+buttons.forEach(btn=>{const id=btn.dataset.tab;const tile=document.createElement('button');tile.type='button';tile.className='v56-admin-tile';tile.innerHTML=`<span class="v56-admin-icon">${icons[id]||'📁'}</span><span class="v56-admin-tile-copy"><strong>${btn.textContent.trim().replace(/\s*0$/,'')}</strong><small>${descriptions[id]||'Manage this section'}</small></span><span class="v56-admin-tile-arrow">→</span>`;tile.addEventListener('click',()=>openSection(id));tiles.appendChild(tile)});
+function openSection(id){const btn=buttons.find(b=>b.dataset.tab===id);if(!btn)return;btn.click();home.hidden=true;crumb.hidden=false;tabs.hidden=true;document.getElementById('v56AdminSectionTitle').textContent=btn.textContent.trim();history.replaceState(null,'','#'+id);window.scrollTo({top:0,behavior:'instant'})}
+function openHome(){home.hidden=false;crumb.hidden=true;tabs.hidden=true;document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));buttons.forEach(b=>b.classList.remove('active'));history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'})}
+back.addEventListener('click',openHome);
+// Allow deep linking to a management section without exposing all sections at once.
+const initial=decodeURIComponent(location.hash.slice(1));if(buttons.some(b=>b.dataset.tab===initial))openSection(initial);else openHome();
+})();

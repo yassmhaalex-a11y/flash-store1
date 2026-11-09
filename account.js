@@ -13,16 +13,15 @@ async function loadOrders(){
   box.innerHTML=orders.map(o=>{
    const href='/order.html?id='+encodeURIComponent(o.id);
    const st=String(o.status||'pending');
-   return `<a class="my-order order-open-link" href="${href}">
-    <div class="order-card-head"><div><b>Order #${esc(o.order_number)}</b><span class="badge">${esc(statusLabel(st))}</span></div><b class="order-arrow">→</b></div>
-    <div class="muted">${new Date(o.created_at).toLocaleString()} · ${Number(o.total||0).toLocaleString()} EGP · ${esc(o.payment_method||'')}</div>
-    <div class="order-progress">
-      <span class="${['pending','paid','processing','completed'].includes(st)?'on':''}">Pending</span>
-      <span class="${['paid','processing','completed'].includes(st)?'on':''}">Payment</span>
-      <span class="${['processing','completed'].includes(st)?'on':''}">Processing</span>
-      <span class="${st==='completed'?'on':''}">Completed</span>
-    </div>
-    <div class="muted order-open-hint">Click to open order details</div>
+   const isCancelled=['cancelled','canceled'].includes(st);
+   const date=o.created_at?new Date(o.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+   const steps=['Pending','Payment','Processing','Completed'];
+   const stepIndex=st==='completed'?3:st==='processing'?2:st==='paid'?1:0;
+   return `<a class="my-order v56-order-tile" href="${href}">
+    <div class="v56-order-heading"><div><span class="v56-order-kicker">ORDER #${esc(o.order_number)}</span><h3>${isCancelled?'Order canceled':st==='completed'?'Order completed':'Track your order'}</h3></div><span class="v56-order-status ${isCancelled?'cancelled':esc(st)}">${esc(statusLabel(st))}</span></div>
+    <div class="v56-order-facts"><div><small>Placed on</small><strong>${esc(date)}</strong></div><div><small>Total</small><strong>${Number(o.total||0).toLocaleString()} EGP</strong></div><div><small>Payment</small><strong>${esc(o.payment_method||'—')}</strong></div></div>
+    <div class="v56-order-timeline" aria-label="Order status">${steps.map((label,i)=>`<span class="${!isCancelled&&i<=stepIndex?'done':''} ${!isCancelled&&i===stepIndex?'current':''}"><i>${!isCancelled&&i<stepIndex?'✓':i+1}</i><small>${label}</small></span>`).join('')}</div>
+    <div class="v56-order-footer"><span>${isCancelled?'This order was canceled':'View full order details and updates'}</span><strong>View order <span aria-hidden="true">→</span></strong></div>
    </a>`;
   }).join('')||'<p class="muted">You have no orders yet.</p>';
  }catch(e){box.innerHTML=`<div class="processing-box"><b>Could not load My Orders</b><p class="muted">${esc(e.message)}</p><button class="small-btn" onclick="loadOrders()">Try Again</button></div>`}

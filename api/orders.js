@@ -39,17 +39,19 @@ module.exports=async(req,res)=>{
    if(requestedId) orders=orders.filter(o=>String(o.id)===requestedId);
    if(!orders.length) return requestedId ? json(res,404,{error:"Order not found."}) : json(res,200,{orders:[]});
    const ids=orders.map(o=>String(o.id));
+   // The order list must remain available even if optional product/category
+   // metadata has not been migrated or is temporarily unavailable.
    const iq=await db.from("order_items").select("*").in("order_id",ids);
-   if(iq.error)throw iq.error;
+   if(iq.error)console.error("My Orders: optional order items unavailable",iq.error);
    const items=(iq.data||[]).filter(i=>ids.includes(String(i.order_id)));
    const productIds=[...new Set(items.map(i=>i.product_id).filter(Boolean))];
    const optionIds=[...new Set(items.map(i=>i.option_id).filter(Boolean))];
-   const productsQ=productIds.length?await db.from("products").select("id,name,category_id,images,image_url").in("id",productIds):{data:[]};
-   if(productsQ.error)throw productsQ.error;
-   const optionsQ=optionIds.length?await db.from("product_options").select("id,product_id,image_url").in("id",optionIds):{data:[]};
-   if(optionsQ.error)throw optionsQ.error;
-   const catsQ=await db.from("categories").select("id,requires_delivery_credentials,requires_delivery_code");
-   if(catsQ.error)throw catsQ.error;
+   const productsQ=productIds.length?await db.from("products").select("*").in("id",productIds):{data:[]};
+   if(productsQ.error)console.error("My Orders: optional products unavailable",productsQ.error);
+   const optionsQ=optionIds.length?await db.from("product_options").select("*").in("id",optionIds):{data:[]};
+   if(optionsQ.error)console.error("My Orders: optional options unavailable",optionsQ.error);
+   const catsQ=await db.from("categories").select("*");
+   if(catsQ.error)console.error("My Orders: optional categories unavailable",catsQ.error);
    const products=productsQ.data||[], options=optionsQ.data||[], cats=catsQ.data||[];
    const productMap=new Map(products.map(x=>[String(x.id),x]));
    const optionMap=new Map(options.map(x=>[String(x.id),x]));
@@ -67,7 +69,12 @@ module.exports=async(req,res)=>{
       items:its
     };
    });
-   await Promise.all(result.map(async o=>{if(o.proof_url)o.proof_url=await safeSignedProofUrl(o.proof_url)}));
+   await Promise.all(result.map(async o=>{
+     if(o.proof_url){
+       try{o.proof_url=await safeSignedProofUrl(o.proof_url)}
+       catch(e){console.error("My Orders: proof link unavailable",e);o.proof_url=""}
+     }
+   }));
    return json(res,200,{orders:result});
   }
 

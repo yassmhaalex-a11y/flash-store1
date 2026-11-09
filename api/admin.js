@@ -1,7 +1,5 @@
 const {json,env,supabase,getCookie,verifyAdminToken,readBody}=require("../lib/_lib");
 const {sendStoreEmail}=require("../lib/email");
-const {validateDiscountInput}=require("../lib/validate-discount");
-const {safeSignedProofUrl}=require("../lib/private-proof");
 async function configuredAdminEmail(){try{const q=await supabase().from("store_settings").select("admin_email").eq("id",1);return q.data?.[0]?.admin_email||env("ADMIN_EMAIL")||""}catch(_){return env("ADMIN_EMAIL")||""}}
 async function getUser(req){
   const adminToken=verifyAdminToken(getCookie(req,"flash_admin"));
@@ -23,7 +21,6 @@ module.exports=async(req,res)=>{try{
   const failed=[c,pr,d,pay,o,ban,opt,profs,notes,oi,reviews,requests,features].find(x=>x.error);if(failed)throw failed.error;
   const products=pr.data||[], options=opt.data||[], orderItems=oi.data||[], categories=c.data||[];
   const orders=(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)).map(order=>({...order,requires_delivery_credentials:order.requires_delivery_credentials||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_credentials}),requires_delivery_code:order.requires_delivery_code||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_code}),items:orderItems.filter(i=>String(i.order_id)===String(order.id)).map(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));const op=options.find(x=>String(x.id)===String(i.option_id));return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""}})}));
-  await Promise.all(orders.map(async order=>{if(order.proof_url)order.proof_url=await safeSignedProofUrl(order.proof_url)}));
   return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,reviews:reviews.data||[],game_requests:requests.data||[],features:features.data?.[0]||{},notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
  }
  if(req.method==="POST"){
@@ -63,23 +60,12 @@ module.exports=async(req,res)=>{try{
   } else if(b.type==="settings"){
    const q=await db.from("store_settings").update({store_name:b.store_name||"FLASH STORE",logo_url:b.logo_url||"",about_title:b.about_title||"About FLASH STORE",about_text:b.about_text||"",whatsapp:b.whatsapp||"",support_title:b.support_title||"Support",support_text:b.support_text||"Need help? Contact us on WhatsApp.",admin_email:String(b.admin_email||"").trim().toLowerCase(),updated_at:new Date().toISOString()},{id:"eq.1"});if(q.error)throw q.error;
   } else if(b.type==="discount"){
-   const discountError=validateDiscountInput(b);
-   if(discountError)return json(res,400,{error:discountError});
    const scope=['all','products','categories'].includes(b.scope)?b.scope:'all';
    if((b.min_order_total!=null&&Number(b.min_order_total)<0)||(b.max_order_total!=null&&Number(b.max_order_total)<0)||(b.min_order_total!=null&&b.max_order_total!=null&&Number(b.min_order_total)>Number(b.max_order_total)))return json(res,400,{error:'Invalid discount order total range'});
-   const rawTargets=Array.isArray(b.target_ids)?b.target_ids:[];
-   if(rawTargets.length>100||rawTargets.some(x=>typeof x!=='string'||!x.trim()||x.length>128))return json(res,400,{error:'Invalid discount targets'});
-   const targets=[...new Set(rawTargets.map(x=>x.trim()))];
+   const targets=[...new Set((Array.isArray(b.target_ids)?b.target_ids:[]).filter(x=>typeof x==='string'&&x.length>0))];
    if(scope!=='all'&&!targets.length)return json(res,400,{error:'Select at least one eligible product or category'});
-   if(scope!=='all'){
-    const table=scope==='products'?'products':'categories';
-    // Query only selected IDs: a full-table select can silently truncate at the API row limit.
-    const check=await db.from(table).select('id').in('id',targets);
-    if(check.error)throw check.error;
-    const valid=new Set((check.data||[]).map(x=>String(x.id)));
-    if(targets.some(id=>!valid.has(id)))return json(res,400,{error:'One or more selected items no longer exist'});
-   }
-   const q=await db.from("discounts").insert({code:b.code,value:Number(b.value),kind:b.kind||"percent",scope,first_order_only:!!b.first_order_only,one_use_per_user:!!b.one_use_per_user,max_uses:b.max_uses?Number(b.max_uses):null,starts_at:b.starts_at||null,ends_at:b.ends_at||null,min_order_total:b.min_order_total==null?null:Number(b.min_order_total),max_order_total:b.max_order_total==null?null:Number(b.max_order_total),active:true},{returning:'representation'});if(q.error)throw q.error;
+   if(scope!=='all'){const table=scope==='products'?'products':'categories';const check=await db.from(table).select('id');if(check.error)throw check.error;const valid=new Set((check.data||[]).map(x=>String(x.id)));if(targets.some(id=>!valid.has(id)))return json(res,400,{error:'One or more selected items no longer exist'});}
+   const q=await db.from("discounts").insert({code:b.code,value:Number(b.value),kind:b.kind||"percent",scope,first_order_only:!!b.first_order_only,one_use_per_user:!!b.one_use_per_user,max_uses:b.max_uses?Number(b.max_uses):null,min_order_total:b.min_order_total==null?null:Number(b.min_order_total),max_order_total:b.max_order_total==null?null:Number(b.max_order_total),active:true},{returning:'representation'});if(q.error)throw q.error;
    const id=q.data?.[0]?.id;if(!id)throw Error('Could not read newly created discount ID');
    if(scope!=='all'){const table=scope==='products'?'discount_products':'discount_categories';const key=scope==='products'?'product_id':'category_id';for(const target of targets){const link=await db.from(table).insert({discount_id:id,[key]:target});if(link.error){await db.from('discounts').delete({id:'eq.'+id});throw link.error}}}
   } else if(b.type==="notification_read"){

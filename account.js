@@ -3,8 +3,13 @@ function setMode(){const up=mode==="signup";title.textContent=up?"Create Account
 async function checkSession(){const me=await fetch('/api/me').then(r=>r.ok?r.json():null).catch(()=>null);if(!me){setMode();return}auth.style.display='none';logged.style.display='block';logged.innerHTML=`<div class="account-top"><div><span class="eyebrow">SIGNED IN</span><h1>Welcome, ${esc(me.full_name||me.email)}</h1><p class="muted">${esc(me.email)} · ${esc(me.role||'client')}</p></div><button class="small-btn" id="signout">Sign Out</button></div><div class="account-orders" id="orders"><div class="section-head"><div><span class="eyebrow">ORDERS</span><h2>My Orders</h2><p class="muted">Track your order status and payment details.</p></div></div><div id="myOrders"><p class="muted">Loading orders...</p></div></div>`;document.querySelector('#signout').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});location.reload()};loadOrders()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function statusLabel(s){return ({pending:'Pending',paid:'Paid',processing:'Processing',completed:'Completed',cancelled:'Canceled',canceled:'Canceled'}[s]||s)}
-let v574Orders=[];let v574Filter="all",v574Query="";
-function v574Render(){const box=document.querySelector('#myOrders');if(!box)return;const orders=v574Orders.filter(o=>{const st=String(o.status||'pending').toLowerCase(),f=v574Filter;return (f==='all'||(f==='pending'?['pending','paid'].includes(st):f==='canceled'?['canceled','cancelled'].includes(st):st===f))&&(!v574Query||[o.order_number,o.payment_method,o.status].some(x=>String(x??'').toLowerCase().includes(v574Query)))});
+async function loadOrders(){
+ const box=document.querySelector('#myOrders');
+ try{
+  const r=await fetch('/api/orders',{cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(d.error||'Could not load orders');
+  const orders=d.orders||[];
   box.innerHTML=orders.map(o=>{
    const href='/order.html?id='+encodeURIComponent(o.id);
    const st=String(o.status||'pending');
@@ -19,10 +24,8 @@ function v574Render(){const box=document.querySelector('#myOrders');if(!box)retu
     <div class="v56-order-footer"><span>${isCancelled?'This order was canceled':'View full order details and updates'}</span><strong>View order <span aria-hidden="true">→</span></strong></div>
    </a>`;
   }).join('')||'<p class="muted">You have no orders yet.</p>';
- }
-async function loadOrders(){const box=document.querySelector('#myOrders');try{const r=await fetch('/api/orders',{cache:'no-store'});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Could not load orders');v574Orders=Array.isArray(d.orders)?d.orders:[];v574Render()}catch(e){box.innerHTML=`<div class="processing-box"><b>Could not load My Orders</b><p class="muted">${esc(e.message)}</p><button class="small-btn" onclick="loadOrders()">Try Again</button></div>`}}
-document.addEventListener('input',e=>{if(e.target.id==='v574OrderSearch'){v574Query=e.target.value.trim().toLowerCase();v574Render()}});
-document.addEventListener('click',e=>{const b=e.target.closest('#v574OrderFilters button[data-filter]');if(!b)return;v574Filter=b.dataset.filter;document.querySelectorAll('#v574OrderFilters button').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',String(x===b))});v574Render()});
+ }catch(e){box.innerHTML=`<div class="processing-box"><b>Could not load My Orders</b><p class="muted">${esc(e.message)}</p><button class="small-btn" onclick="loadOrders()">Try Again</button></div>`}
+}
 switchBtn.onclick=()=>{mode=mode==="signin"?"signup":"signin";msg.textContent="";setMode()};document.querySelector('#newAccount').onclick=()=>{mode='signup';setMode();document.querySelector('#email').focus()};document.querySelector('#forgot').onclick=async()=>{const email=document.querySelector('#email').value.trim();if(!email){msg.textContent='Enter your email first, then choose Forgot password.';return}msg.textContent='Sending password reset email...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'forgot',email})});const d=await r.json();msg.textContent=d.message||d.error||''}catch{msg.textContent='Could not send reset email.'}};
 submit.onclick=async()=>{const email=document.querySelector('#email').value.trim(),password=document.querySelector('#password').value,name=document.querySelector('#name').value.trim();if(!email||!password||(mode==='signup'&&!name)){msg.textContent='Please complete all required fields.';return}localStorage.flashLastEmail=email;submit.disabled=true;msg.textContent=mode==='signup'?'Creating account...':'Signing in...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode,email,password,full_name:name})});const d=await r.json().catch(()=>({}));if(!r.ok){msg.innerHTML=`${esc(d.error||'Sign in failed.')} <button class="link-btn inline" onclick="document.querySelector('#newAccount').click()">Create new account</button> <button class="link-btn inline" onclick="document.querySelector('#forgot').click()">Forgot password</button>`;return}msg.textContent=d.message||'';const ret=new URLSearchParams(location.search).get('return');setTimeout(()=>location.href=ret||d.redirect||'/account.html',250)}catch(e){msg.textContent='Connection error. Please try again.'}finally{submit.disabled=false}};
 const last=localStorage.flashLastEmail;if(last)document.querySelector('#email').value=last;setMode();checkSession();

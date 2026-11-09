@@ -17,8 +17,16 @@ module.exports=async(req,res)=>{
   await ensurePrivateBucket();
   // Choose the extension from the allowed declared MIME type; do not trust the filename.
   const ext=({"image/png":"png","image/jpeg":"jpg","image/jpg":"jpg","image/webp":"webp","image/gif":"gif"})[file.contentType.toLowerCase()];const path=`proof/${user.id}/${randomUUID()}.${ext}`;
-  const up=await fetch(root+"/storage/v1/object/"+BUCKET+"/"+path,{method:"POST",headers:{apikey:key,Authorization:"Bearer "+key,"Content-Type":file.contentType},body:file.data});if(!up.ok)throw Error("Payment proof upload failed: "+await up.text());
+  const up=await fetch(root+"/storage/v1/object/"+BUCKET+"/"+path,{method:"POST",headers:{apikey:key,Authorization:"Bearer "+key,"Content-Type":file.contentType},body:file.data});if(!up.ok){
+    const detail=await up.text();
+    console.error('[upload-proof] Supabase Storage upload rejected', {status:up.status,detail:detail.slice(0,1000)});
+    const error=Error('Storage upload rejected');error.publicCode='STORAGE_UPLOAD_REJECTED';error.upstreamStatus=up.status;throw error;
+  }
   const url=root+"/storage/v1/object/"+BUCKET+"/"+path;
   return json(res,200,{url,proof_receipt:issue(user.id,url)});
- }catch(e){return json(res,e.message==="Upload too large"?413:500,{error:e.message==="Upload too large"?"Image must be 4MB or smaller.":"Payment proof upload failed."})}
+ }catch(e){
+    const code=e.publicCode||(/SUPABASE_SERVICE_ROLE_KEY is missing/.test(e.message)?'STORAGE_KEY_MISSING':/bucket/i.test(e.message)?'STORAGE_BUCKET_ERROR':/fetch failed/i.test(e.message)?'STORAGE_CONNECTION_ERROR':'STORAGE_SERVER_ERROR');
+    console.error('[upload-proof] Failed', {code,message:e.message,upstreamStatus:e.upstreamStatus||null});
+    return json(res,e.message==='Upload too large'?413:500,{error:e.message==='Upload too large'?'Image must be 4MB or smaller.':'Payment proof upload failed.',code});
+  }
 };

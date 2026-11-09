@@ -2,7 +2,7 @@ let mode="signin";const title=document.querySelector("#title"),nameField=documen
 function setMode(){const up=mode==="signup";title.textContent=up?"Create Account":"Sign In";nameField.style.display=up?"grid":"none";submit.textContent=up?"Create Account":"Sign In";switchBtn.textContent=up?"Already have an account":"Create account";document.querySelector('#forgot').style.display=up?'none':'inline-flex'}
 async function checkSession(){const me=await fetch('/api/me').then(r=>r.ok?r.json():null).catch(()=>null);if(!me){setMode();return}auth.style.display='none';logged.style.display='block';logged.innerHTML=`<div class="account-top"><div><span class="eyebrow">SIGNED IN</span><h1>Welcome, ${esc(me.full_name||me.email)}</h1><p class="muted">${esc(me.email)} · ${esc(me.role||'client')}</p></div><button class="small-btn" id="signout">Sign Out</button></div><div class="account-orders" id="orders"><div class="section-head"><div><span class="eyebrow">ORDERS</span><h2>My Orders</h2><p class="muted">Track your order status and payment details.</p></div></div><div id="myOrders"><p class="muted">Loading orders...</p></div></div>`;document.querySelector('#signout').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});location.reload()};loadOrders()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function statusLabel(s){return ({pending:'Pending',paid:'Paid',processing:'Processing',completed:'Completed',cancelled:'Cancelled'}[s]||s)}
+function statusLabel(s){return ({pending:'Pending',paid:'Paid',processing:'Processing',completed:'Completed',cancelled:'Canceled',canceled:'Canceled'}[s]||s)}
 async function loadOrders(){
  const box=document.querySelector('#myOrders');
  try{

@@ -6,13 +6,14 @@ function saveCart(c){items=c;localStorage.flashCart=JSON.stringify(c);renderCart
 function selectedProduct(i){return productMap.get(String(i.product_id))}
 function selectedOption(i){const p=selectedProduct(i);return p?.options?.find(o=>String(o.id)===String(i.option_id))}
 function needsAccount(i){const o=selectedOption(i);const p=selectedProduct(i);return !!(o?.requires_account_details??p?.requires_account_details)}
+function itemStock(i){const o=selectedOption(i),p=selectedProduct(i),x=o||p;return x?.stock_quantity==null?Infinity:Number(x.stock_quantity)}
 function itemPrice(i){const o=selectedOption(i),p=selectedProduct(i);return Number(o?.effective_price??o?.price??p?.effective_price??p?.price??i.price??0)}
 function totals(){const sub=items.reduce((a,x)=>a+itemPrice(x)*Number(x.quantity||1),0);document.querySelector('#sub').textContent=money(sub);document.querySelector('#disc').textContent=money(discountAmount);document.querySelector('#total').textContent=money(Math.max(0,sub-discountAmount))}
 function renderCart(){
- document.querySelector('#items').innerHTML=items.length?items.map((x,i)=>`<div class="cart-line"><img src="${esc(x.image||selectedOption(x)?.image_url||selectedProduct(x)?.image_url||'')}" alt=""><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${x.option_name?esc(x.option_name)+' · ':''}${money(itemPrice(x))}</div></div><div class="cart-qty"><button class="small-btn" onclick="changeQty(${i},-1)">−</button><b>${x.quantity}</b><button class="small-btn" onclick="changeQty(${i},1)">+</button></div><div class="cart-price"><b>${money(itemPrice(x)*x.quantity)}</b><button class="small-btn remove-cart" onclick="removeItem(${i})">Remove</button></div></div>`).join(''):`<p class="muted">Your cart is empty.</p>`;
- document.querySelector('#place').disabled=!items.length;totals();
+ document.querySelector('#items').innerHTML=items.length?items.map((x,i)=>`<div class="cart-line"><img src="${esc(x.image||selectedOption(x)?.image_url||selectedProduct(x)?.image_url||'')}" alt=""><div style="flex:1"><b>${esc(x.name)}</b><div class="muted">${x.option_name?esc(x.option_name)+' · ':''}${money(itemPrice(x))}${itemStock(x)<=0?'<div class="v56-stock-error">Out of stock — remove this item</div>':Number(x.quantity)>itemStock(x)?'<div class="v56-stock-error">Quantity exceeds available stock</div>':''}</div></div><div class="cart-qty"><button class="small-btn" onclick="changeQty(${i},-1)">−</button><b>${x.quantity}</b><button class="small-btn" onclick="changeQty(${i},1)">+</button></div><div class="cart-price"><b>${money(itemPrice(x)*x.quantity)}</b><button class="small-btn remove-cart" onclick="removeItem(${i})">Remove</button></div></div>`).join(''):`<p class="muted">Your cart is empty.</p>`;
+ document.querySelector('#place').disabled=!items.length||items.some(x=>Number(x.quantity)>itemStock(x));totals();
 }
-window.changeQty=(i,d)=>{items[i].quantity=Math.max(1,Number(items[i].quantity||1)+d);saveCart(items)};
+window.changeQty=(i,d)=>{const next=Math.max(1,Number(items[i].quantity||1)+d);if(next>itemStock(items[i])){alert("Not enough stock available.");return;}items[i].quantity=next;saveCart(items)};
 window.removeItem=i=>{items.splice(i,1);saveCart(items)};
 function collectAccountDetails(){const email=document.querySelector('#accountEmail')?.value.trim()||'',password=document.querySelector('#accountPassword')?.value||'';return items.map(x=>({key:x.key,email:email,password:password}))}
 async function init(){
@@ -32,7 +33,7 @@ document.querySelector('#payment').onchange=updatePayment;
 document.querySelector('#proof').onchange=e=>{const f=e.target.files[0],im=document.querySelector('#proofPreview');if(f){im.src=URL.createObjectURL(f);im.style.display='block'}else im.style.display='none'};
 document.querySelector('#apply').onclick=async()=>{const code=document.querySelector('#discount').value.trim();if(!code)return;const r=await fetch('/api/discount',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code,items})});const d=await r.json();if(!r.ok){document.querySelector('#discountMsg').textContent=d.error||'Invalid code';discountAmount=0}else{discountAmount=Number(d.amount||0);document.querySelector('#discountMsg').textContent=`Applied: ${d.label||code}`}totals()};
 document.querySelector('#place').onclick=async()=>{
- if(!items.length)return;if(!currentUser){location.href='/account.html?return=/checkout.html';return}
+ if(!items.length)return;if(items.some(x=>Number(x.quantity)>itemStock(x))){document.querySelector('#checkoutMsg').textContent='Some items are out of stock. Please update your cart.';return;}if(!currentUser){location.href='/account.html?return=/checkout.html';return}
  if(!document.querySelector('#fullName').value.trim()||!document.querySelector('#phone').value.trim()){document.querySelector('#checkoutMsg').textContent='Please complete your name and phone.';return}
  if(!payments.length){document.querySelector('#checkoutMsg').textContent='No active payment method is available. Please contact support.';return}
  const details=collectAccountDetails();

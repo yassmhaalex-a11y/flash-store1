@@ -4,7 +4,7 @@ if(req.method==='GET'){const q=await db.from('store_reviews').select('id,display
 if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});if(!enabled)return json(res,403,{error:'Reviews disabled'});
 const b=await readBody(req);const name=String(b.name||'').trim(),comment=String(b.comment||'').trim(),rating=Number(b.rating);
 if(name.length<2||name.length>80||comment.length<3||comment.length>1500||!Number.isInteger(rating)||rating<1||rating>10)return json(res,400,{error:'Check name, rating and comment'});
-const q=await db.from('store_reviews').insert({display_name:name,comment,rating,approved:false});if(q.error)throw q.error;
-await db.from('notifications').insert({title:'New review pending',message:name+' submitted a '+rating+'/10 review',read:false}).catch(()=>{});
-return json(res,200,{ok:true,message:'Review submitted for approval'});
+const q=await db.from('store_reviews').insert({display_name:name,comment,rating,approved:true});if(q.error)throw q.error;
+await db.from('notifications').insert({title:'New public review',message:name+' submitted a '+rating+'/10 review',read:false}).catch(()=>{});
+return json(res,200,{ok:true,message:'Review published successfully'});
 }catch(e){return json(res,500,{error:e.message})}};

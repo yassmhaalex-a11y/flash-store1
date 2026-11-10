@@ -1,0 +1,10 @@
+FLASH STORE — V58 Admin + SEO release
+
+Base: FLASH_STORE_MAIN_WITH_V58_ADMIN_ONLY.zip
+Admin: approved V58 admin files and functions kept unchanged.
+SEO: refreshed robots.txt and sitemap.xml, noindex on wishlist, response headers for private/admin/API pages.
+Existing home page SEO title, description, canonical and structured data are preserved.
+IMPORTANT: product.html and category.html intentionally remain noindex,follow because they use client-rendered dynamic content and generic canonicals. Indexing individual products/categories requires a separate server-rendered URL strategy; this package does not claim to solve that.
+No checkout, My Orders, Supabase API, admin business logic or homepage layout changes.
+Deployment: upload contents of ZIP to GitHub main and deploy via Vercel; then submit sitemap URL in Search Console.
+Back up the current main branch before deploying.

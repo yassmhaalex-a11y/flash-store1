@@ -1,0 +1,35 @@
+/* V59: preserve original storefront behavior; restore desktop review stars */
+@media (min-width:901px){
+ body:has(.hero-home)>.header .header-main .header-actions{display:flex!important;align-items:center!important;visibility:visible!important;gap:8px!important;margin-left:12px}
+ body:has(.hero-home)>.header .header-main #flashRating:not([hidden]){display:inline-block!important;visibility:visible!important;opacity:1!important;flex:none!important;min-width:6em!important;white-space:nowrap!important;font-size:19px!important}
+ body:has(.hero-home)>.header .header-main{display:flex!important;align-items:center!important;gap:12px!important;flex-wrap:nowrap!important}
+ body:has(.hero-home)>.header .brand{flex:0 0 auto!important}
+}
+#flashRating[hidden]{display:none!important}
+/* V59 admin design; original handlers, IDs and Supabase API remain unchanged */
+body:has(#panel) {--admin-card:#1c283a;--admin-border:#344359;background:#0b101b;color:#f5f7fb}
+body:has(#panel) .header{background:#111929}
+body:has(#panel) .admin-wrap{max-width:none!important;padding:0 24px 0 256px!important;margin:0!important}
+body:has(#panel) #panel{max-width:1500px;margin:0 auto;padding-bottom:60px}
+body:has(#panel) #panel>.section-head{padding-top:28px}
+body:has(#panel) #panel .admin-card{background:#1c283a;border-color:#344359;box-shadow:none}
+body:has(#panel) #panel .stat{background:#1c283a;border-color:#344359}
+body:has(#panel) #panel .v574-stat{background:#1c283a;border-color:#344359}
+body:has(#panel) #panel .v56-admin-tile{background:#1c283a;border-color:#344359}
+body:has(#panel) #panel .admin-form input,body:has(#panel) #panel .admin-form select,body:has(#panel) #panel .admin-form textarea{background:#111929}
+body:has(#panel) #panel .admin-nav{display:none!important}
+body:has(#panel) #panel .admin-grid{grid-template-columns:1fr!important;max-width:1100px}
+body:has(#panel) #panel .admin-grid>.admin-card{grid-column:1/-1}
+body:has(#panel) #panel .admin-card{padding:clamp(15px,2.5vw,24px)}
+body:has(#panel) #panel .v574-dashboard{margin-bottom:20px}
+#v59Sidebar{position:fixed;z-index:35;left:0;top:0;bottom:0;width:232px;background:#111929;border-right:1px solid #344359;padding:22px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+#v59Sidebar .v59-logo{font-size:19px;font-weight:900;color:#fff;padding:5px 12px 20px;letter-spacing:.3px}
+#v59Sidebar .v59-logo span{color:#ffb000}
+#v59Sidebar .v59-label{color:#8393ab;font-size:10px;letter-spacing:1.5px;padding:8px 12px;font-weight:800}
+#v59Sidebar button{width:100%;display:flex;align-items:center;gap:11px;border:0;border-radius:10px;background:transparent;color:#c4d0df;font-size:13px;font-weight:650;text-align:left;padding:12px;cursor:pointer}
+#v59Sidebar button:hover{background:#243146;color:#fff}
+#v59Sidebar button.active{background:#3c222e;color:#ff766c}
+#v59Sidebar button .v59-icon{width:22px;text-align:center;font-size:17px}
+#v59Sidebar .v59-foot{margin-top:auto;padding:16px 12px;color:#8393ab;font-size:11px}
+body:has(#panel) #v56AdminBreadcrumb{align-items:center}
+@media(max-width:900px){body:has(#panel) .admin-wrap{padding:0 12px!important}#v59Sidebar{position:static;width:auto;max-height:160px;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:10px;gap:6px;border-right:0;border-bottom:1px solid #344359}#v59Sidebar .v59-logo,#v59Sidebar .v59-label,#v59Sidebar .v59-foot{display:none}#v59Sidebar button{width:auto;flex:none;white-space:nowrap;padding:10px}body:has(#panel) #panel .stats{grid-template-columns:repeat(2,minmax(0,1fr))}}

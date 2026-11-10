@@ -1,0 +1,7 @@
+FLASH STORE Google branding update
+- Added application-name and og:site_name on homepage.
+- Added explicit 48x48 PNG favicon and multi-size favicon.ico.
+- Existing WebSite and Organization JSON-LD already specified FLASH STORE; retained.
+- All other site/admin files preserved.
+
+After deployment, use Search Console URL Inspection for https://flash-store1.vercel.app/ and request indexing. Google controls final display and changes can take days or weeks.

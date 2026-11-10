@@ -1,0 +1,18 @@
+/* V58 desktop review stars visibility only. Keep mobile header unchanged. */
+@media (min-width: 901px) {
+  body:has(.hero-home) > .header .desktop-nav #flashRatingDesktop:not([hidden]) {
+    display: inline-block !important;
+    position: relative;
+    font-size: 20px;
+    line-height: 1.25;
+    letter-spacing: 1px;
+    color: #ffcb00;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 100px;
+  }
+  #flashRatingDesktop .flash-stars-empty { color: #626b7c; }
+  #flashRatingDesktop .flash-stars-fill { color: #ffcb00; }
+}
+@media (max-width: 900px) { #flashRatingDesktop { display: none !important; } }
+#flashRatingDesktop[hidden] { display: none !important; }

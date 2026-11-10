@@ -1,0 +1,7 @@
+/* Desktop only: five stars beside the FLASH STORE name, not in the navigation. */
+@media (min-width:901px){
+  body:has(.hero-home)>.header .header-main{display:flex!important;align-items:center!important;gap:12px!important;justify-content:flex-start!important;}
+  body:has(.hero-home)>.header .header-main .flash-brand-four-stars:not([hidden]){display:inline-flex!important;position:relative!important;color:#ffcb00!important;font-size:19px!important;line-height:1!important;letter-spacing:1px!important;white-space:nowrap!important;text-decoration:none!important;flex-shrink:0!important;margin-left:2px!important;}
+}
+@media(max-width:900px){.flash-brand-four-stars{display:none!important}}
+.flash-brand-four-stars[hidden]{display:none!important}

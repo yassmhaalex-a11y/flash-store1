@@ -75,9 +75,13 @@ module.exports=async(req,res)=>{
 
     if(body.mode==='forgot'){
       if(!email)return json(res,400,{error:'Enter your email first.'});
-      const r=await fetch(root+'/auth/v1/recover',{
+      // Supabase Auth reads redirect_to from the recovery endpoint query string,
+      // not from the JSON request body.
+      const redirectUrl=`${publicOrigin(req)}/reset-password.html`;
+      const recoverUrl=`${root}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectUrl)}`;
+      const r=await fetch(recoverUrl,{
         method:'POST',headers:{apikey:env('SUPABASE_ANON_KEY'),'Content-Type':'application/json'},
-        body:JSON.stringify({email,redirect_to:`${publicOrigin(req)}/reset-password.html`})
+        body:JSON.stringify({email})
       });
       const d=await r.json().catch(()=>({}));
       if(!r.ok)return json(res,r.status,{error:d.msg||d.error_description||'Could not send reset email.'});

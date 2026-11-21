@@ -1,0 +1,21 @@
+FLASH STORE V55 — Automatic Gmail order emails (free within Google limits)
+
+1. In Supabase SQL Editor, run SUPABASE_V55_EMAIL_QUEUE.sql. This queues NEW orders and status transitions only. No old orders are emailed retroactively.
+2. In Google Apps Script Code.gs, replace previous test code with Code.gs from this folder.
+3. Apps Script > Project Settings > Script Properties: add:
+   SUPABASE_URL = your Supabase project URL
+   SUPABASE_SERVICE_ROLE_KEY = your secret service_role key
+   DRIVE_LOGO_FILE_ID = 1BnuH3vGbjt8E7pJLR065w-uRV-Q6TyFY
+   Do not paste keys in chat or in public GitHub. Restrict project access to the store owner.
+4. Run processFlashStoreEmails once, grant permissions, and check Execution log. If queue is empty, nothing will be sent.
+5. Create a NEW test order using a test customer account with your own email, then run processFlashStoreEmails again. Verify that you received one email and it contains the real order number.
+6. Once verified, run installFlashStoreEmailTrigger ONCE. Google Apps Script will poll for queued email jobs approximately every 5 minutes, subject to Google quotas and scheduling variability.
+7. Test Pending -> Processing -> Completed, and canceled cases. Never use real customer data for tests.
+
+IMPORTANT:
+- The service_role key bypasses RLS. It must exist ONLY in private Script Properties. Never include it in client JS or public repo.
+- Email is not guaranteed instantaneous. Gmail/Apps Script quotas and Google anti-abuse restrictions apply.
+- This integration is a queue + worker. It does not modify stock, analytics, or the V54 admin UI.
+- In V54, the pre-existing Supabase Edge Function 'order-emails' may already send notifications. Disable its email sending first to avoid duplicate emails before activating this worker.
+- Email idempotency: each (order,event) is queued only once. Network failures after sending but before acknowledgement can still cause a rare retry/duplicate; email delivery is not exactly-once guaranteed.
+- Only the logged-in owner can read Drive logo. Do not publish Apps Script as a web app.

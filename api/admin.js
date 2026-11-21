@@ -21,10 +21,23 @@ module.exports=async(req,res)=>{try{
   const failed=[c,pr,d,pay,o,ban,opt,profs,notes,oi,reviews,requests,features].find(x=>x.error);if(failed)throw failed.error;
   const products=pr.data||[], options=opt.data||[], orderItems=oi.data||[], categories=c.data||[];
   const orders=(o.data||[]).sort((a,b)=>Number(b.order_number)-Number(a.order_number)).map(order=>({...order,requires_delivery_credentials:order.requires_delivery_credentials||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_credentials}),requires_delivery_code:order.requires_delivery_code||orderItems.filter(i=>String(i.order_id)===String(order.id)).some(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));return !!categories.find(c=>String(c.id)===String(p?.category_id))?.requires_delivery_code}),items:orderItems.filter(i=>String(i.order_id)===String(order.id)).map(i=>{const p=products.find(x=>String(x.id)===String(i.product_id));const op=options.find(x=>String(x.id)===String(i.option_id));return {...i,image_url:op?.image_url||p?.images?.[0]||p?.image_url||""}})}));
-  return json(res,200,{categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,reviews:reviews.data||[],game_requests:requests.data||[],features:features.data?.[0]||{},notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
+  const guidesQuery=await db.from('delivery_guides').select('*').order('account_type');
+  if(guidesQuery.error)throw guidesQuery.error;
+  return json(res,200,{delivery_guides:guidesQuery.data||[],categories:c.data||[],products,discounts:d.data||[],payments:pay.data||[],orders,banners:ban.data||[],options,profiles:profs.data||[],settings:settings.data||[] ,reviews:reviews.data||[],game_requests:requests.data||[],features:features.data?.[0]||{},notifications:(notes.data||[]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))});
  }
  if(req.method==="POST"){
-  if(b.type==="rating_stars") {const n=Number(b.value);if(!Number.isFinite(n)||n<0||n>5||n*2!==Math.floor(n*2))return json(res,400,{error:'Stars must be between 0 and 5 in half-star steps'});const q=await db.from('store_features').update({rating_stars:n},{id:'eq.1'});if(q.error)throw q.error;
+  if(b.type==="delivery_guide") {
+   const type=String(b.account_type||'').toLowerCase();
+   if(!['home','sign','full','personal'].includes(type))return json(res,400,{error:'Invalid account type'});
+   if(!Array.isArray(b.steps)||b.steps.length>25)return json(res,400,{error:'Invalid guide steps'});
+   const steps=b.steps.map((step,i)=>({title:String(step.title||'').trim().slice(0,150),description:String(step.description||'').trim().slice(0,3000),image_url:String(step.image_url||'').trim().slice(0,2000),sort_order:i}));
+   if(steps.some(x=>!x.title||!x.description||x.image_url&&!/^https:\/\//i.test(x.image_url)))return json(res,400,{error:'Each step needs a title and instructions; image URLs must be HTTPS'});
+   const existing=await db.from('delivery_guides').select('account_type').eq('account_type',type);
+   if(existing.error)throw existing.error;
+   const row={account_type:type,steps,enabled:b.enabled!==false,updated_at:new Date().toISOString()};
+   const q=existing.data?.length?await db.from('delivery_guides').update(row,{account_type:'eq.'+type}):await db.from('delivery_guides').insert(row);
+   if(q.error)throw q.error;
+  } else if(b.type==="rating_stars") {const n=Number(b.value);if(!Number.isFinite(n)||n<0||n>5||n*2!==Math.floor(n*2))return json(res,400,{error:'Stars must be between 0 and 5 in half-star steps'});const q=await db.from('store_features').update({rating_stars:n},{id:'eq.1'});if(q.error)throw q.error;
   } else if(b.type==="feature_toggle") {if(!['stars_enabled','game_popup_enabled'].includes(b.field))return json(res,400,{error:'Invalid feature'});const q=await db.from('store_features').update({[b.field]:!!b.enabled},{id:'eq.1'});if(q.error)throw q.error;
    } else if(b.type==="review_moderate") {if(!['approve','hide','delete'].includes(b.action))return json(res,400,{error:'Invalid action'});const q=b.action==='delete'?await db.from('store_reviews').delete({id:'eq.'+b.id}):await db.from('store_reviews').update({approved:b.action==='approve'},{id:'eq.'+b.id});if(q.error)throw q.error;
   } else if(b.type==="reviews_toggle") {const q=await db.from('store_features').update({reviews_enabled:!!b.enabled},{id:'eq.1'});if(q.error)throw q.error;
@@ -84,6 +97,15 @@ module.exports=async(req,res)=>{try{
   if(b.type==="order"){
     const before=await db.from('orders').select('*').eq('id',b.id);if(before.error)throw before.error;const previous=before.data?.[0];if(!previous)return json(res,404,{error:'Order not found'});
     const nextStatus=b.status||previous.status;
+    if(['canceled','cancelled'].includes(nextStatus)&&nextStatus!==previous.status){
+      const reason=String(b.cancellation_reason||'').trim();
+      const allowed=['payment_not_received','incorrect_payment','verification_failed','product_unavailable','technical_issue','customer_request','other'];
+      if(!allowed.includes(reason))return json(res,400,{error:'Choose a cancellation reason'});
+      const note=String(b.cancellation_note||'').trim();
+      if(note.length>1000||(reason==='other'&&!note))return json(res,400,{error:'Enter a valid cancellation explanation'});
+      const saved=await db.from('orders').update({cancellation_reason:reason,cancellation_note:note},{id:'eq.'+b.id});
+      if(saved.error)throw saved.error;
+    }
     if(nextStatus!==previous.status){const changed=await db.rpc('flash_change_order_status',{p_order_id:b.id,p_status:nextStatus});if(changed.error)throw changed.error;}
     if(b.delivery_email!==undefined||b.delivery_password!==undefined||b.delivery_code!==undefined){const details={};if(b.delivery_email!==undefined)details.delivery_email=String(b.delivery_email);if(b.delivery_password!==undefined)details.delivery_password=String(b.delivery_password);if(b.delivery_code!==undefined)details.delivery_code=String(b.delivery_code);const upd=await db.from('orders').update(details,{id:'eq.'+b.id});if(upd.error)throw upd.error;}
     const oq=await db.from("orders").select("*").eq("id",b.id);

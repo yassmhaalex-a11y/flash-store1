@@ -1,0 +1,32 @@
+let mode="signin";const title=document.querySelector("#title"),nameField=document.querySelector("#nameField"),submit=document.querySelector("#submit"),switchBtn=document.querySelector("#switch"),msg=document.querySelector("#msg"),auth=document.querySelector("#auth"),logged=document.querySelector("#logged");
+function setMode(){const up=mode==="signup";title.textContent=up?"Create Account":"Sign In";nameField.style.display=up?"grid":"none";submit.textContent=up?"Create Account":"Sign In";switchBtn.textContent=up?"Already have an account":"Create account";document.querySelector('#forgot').style.display=up?'none':'inline-flex'}
+async function checkSession(){const me=await fetch('/api/me').then(r=>r.ok?r.json():null).catch(()=>null);if(!me){setMode();return}auth.style.display='none';logged.style.display='block';logged.innerHTML=`<div class="account-top"><div><span class="eyebrow">SIGNED IN</span><h1>Welcome, ${esc(me.full_name||me.email)}</h1><p class="muted">${esc(me.email)} · ${esc(me.role||'client')}</p></div><button class="small-btn" id="signout">Sign Out</button></div><div class="account-orders" id="orders"><div class="section-head"><div><span class="eyebrow">ORDERS</span><h2>My Orders</h2><p class="muted">Track your order status and payment details.</p></div></div><div id="myOrders"><p class="muted">Loading orders...</p></div></div>`;document.querySelector('#signout').onclick=async()=>{await fetch('/api/auth',{method:'DELETE'});location.reload()};loadOrders()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function statusLabel(s){return ({pending:'Pending',paid:'Paid',processing:'Processing',completed:'Completed',cancelled:'Canceled',canceled:'Canceled'}[s]||s)}
+async function loadOrders(){
+ const box=document.querySelector('#myOrders');
+ try{
+  const r=await fetch('/api/orders',{cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(d.error||'Could not load orders');
+  const orders=d.orders||[];
+  box.innerHTML=orders.map(o=>{
+   const href='/order.html?id='+encodeURIComponent(o.id);
+   const st=String(o.status||'pending');
+   const isCancelled=['cancelled','canceled'].includes(st);
+   const date=o.created_at?new Date(o.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+   const steps=['Pending','Payment','Processing','Completed'];
+   const stepIndex=st==='completed'?3:st==='processing'?2:st==='paid'?1:0;
+   return `<a class="my-order v56-order-tile" href="${href}">
+    <div class="v56-order-heading"><div><span class="v56-order-kicker">ORDER #${esc(o.order_number)}</span><h3>${isCancelled?'Order canceled':st==='completed'?'Order completed':'Track your order'}</h3></div><span class="v56-order-status ${isCancelled?'cancelled':esc(st)}">${esc(statusLabel(st))}</span></div>
+    <div class="v56-order-facts"><div><small>Placed on</small><strong>${esc(date)}</strong></div><div><small>Total</small><strong>${Number(o.total||0).toLocaleString()} EGP</strong></div><div><small>Payment</small><strong>${esc(o.payment_method||'—')}</strong></div></div>
+    <div class="v56-order-timeline" aria-label="Order status">${steps.map((label,i)=>`<span class="${!isCancelled&&i<=stepIndex?'done':''} ${!isCancelled&&i===stepIndex?'current':''}"><i>${!isCancelled&&i<stepIndex?'✓':i+1}</i><small>${label}</small></span>`).join('')}</div>
+    <div class="v56-order-footer"><span>${isCancelled?'This order was canceled':'View full order details and updates'}</span><strong>View order <span aria-hidden="true">→</span></strong></div>
+   </a>`;
+  }).join('')||'<p class="muted">You have no orders yet.</p>';
+ }catch(e){box.innerHTML=`<div class="processing-box"><b>Could not load My Orders</b><p class="muted">${esc(e.message)}</p><button class="small-btn" onclick="loadOrders()">Try Again</button></div>`}
+}
+switchBtn.onclick=()=>{mode=mode==="signin"?"signup":"signin";msg.textContent="";setMode()};document.querySelector('#newAccount').onclick=()=>{mode='signup';setMode();document.querySelector('#email').focus()};document.querySelector('#forgot').onclick=async()=>{const email=document.querySelector('#email').value.trim();if(!email){msg.textContent='Enter your email first, then choose Forgot password.';return}msg.textContent='Sending password reset email...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'forgot',email})});const d=await r.json();msg.textContent=d.message||d.error||''}catch{msg.textContent='Could not send reset email.'}};
+submit.onclick=async()=>{const email=document.querySelector('#email').value.trim(),password=document.querySelector('#password').value,name=document.querySelector('#name').value.trim();if(!email||!password||(mode==='signup'&&!name)){msg.textContent='Please complete all required fields.';return}localStorage.flashLastEmail=email;submit.disabled=true;msg.textContent=mode==='signup'?'Creating account...':'Signing in...';try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode,email,password,full_name:name})});const d=await r.json().catch(()=>({}));if(!r.ok){msg.innerHTML=`${esc(d.error||'Sign in failed.')} <button class="link-btn inline" onclick="document.querySelector('#newAccount').click()">Create new account</button> <button class="link-btn inline" onclick="document.querySelector('#forgot').click()">Forgot password</button>`;return}msg.textContent=d.message||'';const ret=new URLSearchParams(location.search).get('return');setTimeout(()=>location.href=ret||d.redirect||'/account.html',250)}catch(e){msg.textContent='Connection error. Please try again.'}finally{submit.disabled=false}};
+const last=localStorage.flashLastEmail;if(last)document.querySelector('#email').value=last;setMode();checkSession();
+const accountSearch=document.querySelector('#search');if(accountSearch)accountSearch.onkeydown=e=>{if(e.key==='Enter'&&e.target.value.trim())location.href='/search.html?q='+encodeURIComponent(e.target.value.trim())};const accountMenu=document.querySelector('#menuBtn');if(accountMenu)accountMenu.onclick=()=>{location.href='/'};

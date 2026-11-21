@@ -9,8 +9,26 @@ function cookieToken(req){
   return m&&decodeURIComponent(m[1]);
 }
 
-function setSession(res,accessToken){
-  res.setHeader('Set-Cookie',`flash_token=${encodeURIComponent(accessToken)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=604800`);
+function setSession(res,session){
+  const tokens=typeof session==='string'?{access_token:session}:session;
+  const cookies=[`flash_token=${encodeURIComponent(tokens.access_token)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=604800`];
+  if(tokens.refresh_token)cookies.push(`flash_refresh=${encodeURIComponent(tokens.refresh_token)}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=2592000`);
+  res.setHeader('Set-Cookie',cookies);
+}
+async function resolveSession(req,res,root){
+  const token=cookieToken(req);
+  if(token){try{const user=await authUser(root,token);if(user)return user}catch(_){}}
+  const refresh=(req.headers.cookie||'').match(/(?:^|;\s*)flash_refresh=([^;]+)/);
+  if(!refresh)return null;
+  const r=await fetch(root+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:env('SUPABASE_ANON_KEY'),'Content-Type':'application/json'},body:JSON.stringify({refresh_token:decodeURIComponent(refresh[1])})});
+  if(!r.ok){
+    if(r.status===400||r.status===401)res.setHeader('Set-Cookie',['flash_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure','flash_refresh=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure']);
+    return null;
+  }
+  const session=await r.json();
+  if(!session.access_token||!session.refresh_token)return null;
+  setSession(res,session);
+  return session.user||await authUser(root,session.access_token);
 }
 
 async function authUser(root,token){
@@ -24,9 +42,7 @@ module.exports=async(req,res)=>{
 
     // Consolidated /api/me endpoint to stay within Vercel Hobby's 12-function limit.
     if(req.method==='GET' && (req.query?.mode==='me' || new URL(req.url,'https://localhost').searchParams.get('mode')==='me')){
-      const token=cookieToken(req);
-      if(!token)return json(res,401,{error:'Not signed in'});
-      const user=await authUser(root,token);
+      const user=await resolveSession(req,res,root);
       if(!user)return json(res,401,{error:'Session expired'});
       const q=await supabase().from('profiles').select('*').eq('id',user.id);
       if(q.error)throw q.error;
@@ -52,7 +68,7 @@ module.exports=async(req,res)=>{
           });
         }
       }catch(e){ console.error('Signout email error:',e.message); }
-      res.setHeader('Set-Cookie','flash_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure');
+      res.setHeader('Set-Cookie',['flash_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure','flash_refresh=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure']);
       return json(res,200,{ok:true});
     }
     if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
@@ -84,39 +100,16 @@ module.exports=async(req,res)=>{
         return json(res,409,{error:'This email is already registered. Please Sign In or use Forgot password.'});
       }
 
-      // Create the user server-side and confirm the email immediately.
-      // This keeps the store's intended flow: Create Account -> already signed in.
-      const serviceKey=env('SUPABASE_SERVICE_ROLE_KEY');
-      if(!serviceKey)return json(res,500,{error:'SUPABASE_SERVICE_ROLE_KEY is missing in Vercel Environment Variables.'});
-      const create=await fetch(root+'/auth/v1/admin/users',{
-        method:'POST',
-        headers:{apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json'},
-        body:JSON.stringify({email,password,email_confirm:true,user_metadata:{full_name:fullName}})
-      });
-      const created=await create.json().catch(()=>({}));
-      if(!create.ok){
-        const duplicate=/already|registered|exists|unique/i.test(JSON.stringify(created));
-        return json(res,duplicate?409:create.status,{error:duplicate?'This email is already registered. Please Sign In or use Forgot password.':(created.msg||created.message||created.error_description||'Signup failed.')});
-      }
-
-      // The trigger creates the client profile. Wait briefly for it before returning.
-      try{
-        await supabase().from('notifications').insert({type:'signup',title:'New customer account',message:`${fullName||email} created a new account.`,related_id:created.id||created.user?.id||''});
-      }catch(_){ }
-      try{
-        const adminEmail=await configuredAdminEmail();
-        if(adminEmail) await sendStoreEmail({action:'signup',admin_email:adminEmail,full_name:fullName,email});
-      }catch(e){console.error('Signup email error:',e.message)}
-
-      // Sign in through the normal token endpoint so the browser gets the same session cookie as existing users.
-      const login=await fetch(root+'/auth/v1/token?grant_type=password',{
+      // Public signup through Supabase Auth: never auto-confirm an email.
+      // Email confirmation and its template are managed by Supabase Auth.
+      const signup=await fetch(root+'/auth/v1/signup',{
         method:'POST',headers:{apikey:env('SUPABASE_ANON_KEY'),'Content-Type':'application/json'},
-        body:JSON.stringify({email,password})
+        body:JSON.stringify({email,password,data:{full_name:fullName},email_redirect_to:`${publicOrigin(req)}/account.html`})
       });
-      const logged=await login.json().catch(()=>({}));
-      if(!login.ok)return json(res,login.status,{error:logged.error_description||'Account was created, but automatic sign in failed. Please sign in once.'});
-      setSession(res,logged.access_token);
-      return json(res,200,{message:'Account created and signed in.',redirect:'/account.html'});
+      const created=await signup.json().catch(()=>({}));
+      if(!signup.ok)return json(res,signup.status,{error:created.msg||created.error_description||created.message||'Signup failed.'});
+      // Do not issue a session until the user has verified the email.
+      return json(res,200,{message:'Account created. Check your inbox and verify your email, then sign in.',verification_required:true});
     }
 
     if(body.mode==='reset'){
@@ -126,8 +119,9 @@ module.exports=async(req,res)=>{
       const r=await fetch(root+'/auth/v1/user',{method:'PUT',headers:{apikey:env('SUPABASE_ANON_KEY'),Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({password})});
       const d=await r.json().catch(()=>({}));
       if(!r.ok)return json(res,r.status,{error:d.msg||d.error_description||d.message||'Could not update password.'});
-      setSession(res,accessToken);
-      return json(res,200,{message:'Password updated successfully.',redirect:'/account.html'});
+      // Recovery tokens are not refreshable sessions. Require a normal sign-in.
+      res.setHeader('Set-Cookie',['flash_token=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure','flash_refresh=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure']);
+      return json(res,200,{message:'Password updated successfully. Please sign in.',redirect:'/account.html'});
     }
 
     if(body.mode==='signin'){
@@ -154,7 +148,7 @@ module.exports=async(req,res)=>{
           });
         }
       }catch(e){ console.error('Signin email error:',e.message); }
-      setSession(res,d.access_token);
+      setSession(res,d);
       return json(res,200,{message:'Signed in.',redirect:'/'});
     }
 

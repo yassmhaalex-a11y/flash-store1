@@ -1,0 +1,45 @@
+/* FLASH STORE V58 — admin presentation layer; preserves existing data handlers */
+body:has(#panel){background:radial-gradient(ellipse 900px 450px at 100% 0%,rgba(255,59,48,.095),transparent 70%),#0b0e15;color:#eef1f7}
+body:has(#panel) .admin-wrap{max-width:1500px;padding-inline:clamp(14px,3vw,44px)}
+body:has(#panel) .header{background:#10141e;border-bottom:1px solid #283041}
+#panel>.section-head{padding:25px 0 15px;align-items:center;gap:16px}
+#panel>.section-head h1{font-size:clamp(25px,3vw,38px);letter-spacing:-.04em;margin:4px 0}
+#panel .eyebrow{color:#ffb000;letter-spacing:.17em;font-weight:800;font-size:11px}
+#panel .admin-muted{color:#9ba7ba}
+#panel .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 24px}
+#panel .stat{background:linear-gradient(145deg,#1b2230,#131923);border:1px solid #313b4c;border-radius:18px;padding:22px;min-width:0}
+#panel .stat b{display:block;font-size:clamp(24px,3vw,34px);margin-top:9px;color:#fff;font-variant-numeric:tabular-nums}
+#panel .admin-card{background:#151b26;border:1px solid #2b3545;border-radius:18px;box-shadow:0 8px 28px #0002;color:#f3f5f9}
+#panel .admin-card h2,#panel .admin-card h3{color:#fff;letter-spacing:-.025em}
+#panel .admin-grid{gap:16px}
+#panel :is(input,select,textarea){background:#0d131d;border:1px solid #384455;color:#f6f7fa;border-radius:10px;min-height:42px;max-width:100%}
+#panel :is(input,select,textarea):focus-visible{outline:2px solid #ffb000;outline-offset:1px;border-color:#ffb000}
+#panel input[type=checkbox],#panel input[type=radio]{min-height:unset;accent-color:#ffb000}
+#panel input[type=file]{padding:9px}
+#panel :is(.btn,.small-btn,.admin-nav button){border-radius:10px;transition:transform .15s ease,background .15s ease,border-color .15s ease}
+#panel :is(.btn,.small-btn):hover{transform:translateY(-1px)}
+#panel .btn{background:#ff3b30;color:white;border:1px solid #ff3b30;font-weight:750}
+#panel .small-btn{background:#232c3b;color:#f4f6f9;border:1px solid #445166}
+#panel .v56-admin-tile{background:#171f2b;border:1px solid #303b4c;border-radius:17px;color:#f4f6fa;min-height:130px;text-align:left}
+#panel .v56-admin-tile:hover{border-color:#ffb000;background:#202838;transform:translateY(-2px)}
+#panel .v56-admin-breadcrumb{padding:18px 0;gap:14px;flex-wrap:wrap}
+#panel .v56-admin-breadcrumb h2{font-size:24px;color:#fff}
+#panel .v574-dashboard{margin-bottom:24px}
+#panel .v574-stats>*,#panel .v574-dash-bottom .admin-card{border-color:#354154}
+#panel .admin-section{animation:v58-in .2s ease}
+@keyframes v58-in{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+#v58AdminTools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 16px;margin:4px 0 17px;background:#151c27;border:1px solid #303c4f;border-radius:15px}
+#v58AdminTools .v58-search{flex:1 1 260px;position:relative}
+#v58AdminTools .v58-search input{width:100%;padding:11px 15px 11px 38px;box-sizing:border-box}
+#v58AdminTools .v58-search::before{content:'⌕';position:absolute;left:13px;top:5px;font-size:24px;color:#ffb000}
+#v58AdminTools .v58-tool-btn{background:#222c3b;border:1px solid #43516a;color:#f5f7fc;border-radius:10px;padding:10px 13px;cursor:pointer}
+#v58AdminTools .v58-tool-btn:hover{border-color:#ffb000}
+#v58AdminTools .v58-results{position:absolute;z-index:30;top:calc(100% + 5px);left:0;right:0;background:#1c2533;border:1px solid #526079;border-radius:12px;box-shadow:0 15px 35px #0008;overflow:hidden;max-height:320px;overflow-y:auto}
+#v58AdminTools .v58-results[hidden]{display:none}
+#v58AdminTools .v58-results button{display:block;width:100%;background:transparent;color:#f7f8fa;border:0;border-bottom:1px solid #344054;text-align:left;padding:12px 14px;cursor:pointer}
+#v58AdminTools .v58-results button:hover,#v58AdminTools .v58-results button:focus{background:#303d50}
+#v58AdminTools .v58-kbd{color:#9ca8b9;font-size:12px}
+#panel .v58-section-intro{color:#9ca8b9;font-size:13px;margin:0 0 16px}
+@media(max-width:850px){#panel .stats{grid-template-columns:repeat(2,minmax(0,1fr))}#panel .admin-grid{grid-template-columns:1fr}#panel .v574-dash-bottom{grid-template-columns:1fr}}
+@media(max-width:520px){#panel .stats{gap:9px}#panel .stat{padding:14px}#panel .v56-admin-tiles{grid-template-columns:1fr}#v58AdminTools{padding:10px}#v58AdminTools .v58-tool-btn{flex:1}#panel .admin-card{padding:14px}#panel>.section-head{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){#panel *{animation:none!important;transition:none!important}}

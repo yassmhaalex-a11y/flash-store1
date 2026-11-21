@@ -143,7 +143,24 @@ window.toggleBanner=async id=>{const b=data.banners.find(x=>x.id===id);await pos
 window.toggleDiscount=async id=>{const d=data.discounts.find(x=>x.id===id);await post({type:'discount_update',id,active:!d.active});await refresh()};
 window.openOrderDetail=id=>{const o=(data.orders||[]).find(x=>String(x.id)===String(id));if(!o)return;const body=document.getElementById('orderDetailBody');body.innerHTML=`<div class="admin-grid"><div class="admin-card"><h3>Customer</h3><p><b>Name:</b> ${esc(o.full_name)}</p><p><b>Email:</b> ${esc(o.email)}</p><p><b>Phone:</b> ${esc(o.phone)}</p>${o.discord_tag?`<p><b>Discord:</b> ${esc(o.discord_tag)}</p>`:''}</div><div class="admin-card"><h3>Payment</h3><p><b>Method:</b> ${esc(o.payment_method)}</p><p><b>Details:</b> ${esc(o.payment_details||'')}</p><p><b>Total:</b> ${Number(o.total||0).toLocaleString()} EGP</p>${o.proof_url?`<a class="small-btn" href="${esc(o.proof_url)}" target="_blank">Open Payment Proof</a>`:''}</div></div><div class="admin-card" style="margin-top:14px"><h3>Products</h3>${(o.items||[]).map(i=>`<div class="order-item-admin">${i.image_url?`<img src="${esc(i.image_url)}" alt="">`:''}<span><b>${esc(i.product_name)}</b>${i.option_name?' · '+esc(i.option_name):''} · Qty ${Number(i.quantity||1)} · ${Number(i.unit_price||0).toLocaleString()} EGP</span></div>`).join('')}</div><div class="admin-card" style="margin-top:14px"><h3>Delivery Details</h3><p class="admin-muted">${o.requires_delivery_credentials||o.requires_delivery_code?'Enter the delivery details for this order.':'This order does not require delivery details.'}</p><div class="admin-form"><div><label>Email</label><input id="deliveryEmail" value="${esc(o.delivery_email||'')}" ${o.requires_delivery_credentials?'':'disabled'}></div><div><label>Password</label><input id="deliveryPassword" value="${esc(o.delivery_password||'')}" ${o.requires_delivery_credentials?'':'disabled'}></div><div><label>Code</label><input id="deliveryCode" value="${esc(o.delivery_code||'')}" ${o.requires_delivery_code?'':'disabled'}></div></div><div class="admin-actions-row"><button class="btn" id="saveDelivery" ${o.requires_delivery_credentials||o.requires_delivery_code?'':'disabled'}>Save Delivery Details</button><span class="badge">${(o.requires_delivery_credentials||o.requires_delivery_code)?(((!o.requires_delivery_credentials||(o.delivery_email&&o.delivery_password))&&(!o.requires_delivery_code||o.delivery_code))?'Ready':'Processing'):'Not required'}</span></div></div>`;document.getElementById('orderDetailTitle').textContent=`Order #${o.order_number}`;document.getElementById('orderDetailModal').classList.remove('hidden');document.getElementById('saveDelivery').onclick=async()=>{try{await patch({type:'order',id:o.id,status:o.status,delivery_email:document.getElementById('deliveryEmail').value.trim(),delivery_password:document.getElementById('deliveryPassword').value,delivery_code:document.getElementById('deliveryCode').value.trim()});await refresh();openOrderDetail(o.id)}catch(e){notice('Couldn’t save delivery details',e.message)}}};
 document.getElementById('closeOrderDetail').onclick=()=>document.getElementById('orderDetailModal').classList.add('hidden');
-window.statusOrder=async(id,status)=>{await patch({type:'order',id,status});await refresh()};
+window.statusOrder=async(id,status)=>{
+  const payload={type:'order',id,status};
+  if(['canceled','cancelled'].includes(status)){
+    const choices=['payment_not_received','incorrect_payment','verification_failed','product_unavailable','technical_issue','customer_request','other'];
+    const names=['Payment Not Received','Incorrect Payment','Payment Verification Failed','Product Unavailable','Technical Issue','Canceled at Customer Request','Other Reason'];
+    const selection=prompt('Select cancellation reason by number:\n'+names.map((n,i)=>(i+1)+'. '+n).join('\n'));
+    if(selection===null)return;
+    const index=Number(selection)-1;
+    if(!Number.isInteger(index)||index<0||index>=choices.length){notice('Invalid reason','Please select a number from 1 to 7');return;}
+    payload.cancellation_reason=choices[index];
+    const note=prompt('Additional explanation (required for Other; optional otherwise):','');
+    if(note===null)return;
+    if(choices[index]==='other'&&!note.trim()){notice('Reason required','Please enter a cancellation explanation');return;}
+    payload.cancellation_note=note.trim();
+    if(!confirm('Cancel this order and notify the customer?'))return;
+  }
+  try{await patch(payload);await refresh()}catch(e){notice('Could not update order',e.message)}
+};
 const PRODUCT_FIELDS=['pName','pPlatform','pCategory','pPrice','pOldPrice','pSalePrice','pSaleStart','pSaleEnd','pImage','pDescription'];
 const PRODUCT_CHECKS=['pFeatured','pBest','pDiscount','pActive','pRequiresAccount'];
 function saveProductDraft(){if(editing.product)return;try{const draft={fields:Object.fromEntries(PRODUCT_FIELDS.map(k=>[k,val(k)])),checks:Object.fromEntries(PRODUCT_CHECKS.map(k=>[k,document.getElementById(k).checked])),options:optionRows()};sessionStorage.setItem(PRODUCT_DRAFT_KEY,JSON.stringify(draft));}catch(_){}}
@@ -198,3 +215,17 @@ let pollTimer;function startNotificationPolling(){clearInterval(pollTimer);pollT
 document.getElementById('logout').onclick=async()=>{clearInterval(pollTimer);await api('/api/admin',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'logout'})});location.reload()};
 setupLogin();
 init();
+
+// V60: Add-on editor; leaves existing admin navigation intact.
+function v60GuideEditor(){
+ const list=document.getElementById('orderList');if(!list||document.getElementById('v60Guides'))return;
+ const panel=document.createElement('div');panel.id='v60Guides';panel.className='admin-card';panel.style.marginTop='18px';
+ panel.innerHTML='<h3>Delivery Instructions Manager</h3><p class="admin-muted">Choose account type, edit step text and optional HTTPS image links. Saved guides will be used for new delivery emails after the email worker is upgraded.</p><label>Account type</label><select id="v60Type"><option value="home">Home</option><option value="sign">Sign</option><option value="full">Full</option><option value="personal">Personal</option></select><div id="v60Steps"></div><div class="admin-actions-row"><button class="small-btn" id="v60Add">Add Step</button><button class="btn" id="v60Save">Save Guide</button></div>';
+ list.parentElement.appendChild(panel);
+ const type=panel.querySelector('#v60Type'),steps=panel.querySelector('#v60Steps');
+ const draw=()=>{const guide=(data.delivery_guides||[]).find(x=>x.account_type===type.value);steps.innerHTML='';(guide?.steps||[]).forEach(x=>add(x))};
+ function add(step={}){const el=document.createElement('div');el.className='admin-card';el.style.margin='10px 0';el.innerHTML='<label>Step title</label><input class="v60Title" maxlength="150"><label>Instructions</label><textarea class="v60Description" maxlength="3000"></textarea><label>Image URL (HTTPS)</label><input class="v60Image" placeholder="https://..."><button type="button" class="small-btn danger v60Remove">Remove Step</button>';el.querySelector('.v60Title').value=step.title||'';el.querySelector('.v60Description').value=step.description||'';el.querySelector('.v60Image').value=step.image_url||'';el.querySelector('.v60Remove').onclick=()=>el.remove();steps.appendChild(el)}
+ type.onchange=draw;panel.querySelector('#v60Add').onclick=()=>add();panel.querySelector('#v60Save').onclick=async()=>{const items=[...steps.children].map(el=>({title:el.querySelector('.v60Title').value,description:el.querySelector('.v60Description').value,image_url:el.querySelector('.v60Image').value}));try{await post({type:'delivery_guide',account_type:type.value,steps:items});await refresh();notice('Saved','Delivery guide updated')}catch(e){notice('Could not save guide',e.message)}};draw();
+}
+const v60Observer=new MutationObserver(()=>{if(typeof data!=='undefined'&&data?.orders)v60GuideEditor()});
+v60Observer.observe(document.documentElement,{childList:true,subtree:true});

@@ -86,15 +86,6 @@
           "value": "noindex, nofollow"
         }
       ]
-    },
-    {
-      "source": "/verify-email.html",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex, nofollow"
-        }
-      ]
     }
   ]
 }

@@ -1,2 +1,0 @@
--- V38 email webhook setup is no longer needed in V39.
--- Use SUPABASE_V39_MIGRATION.sql only.

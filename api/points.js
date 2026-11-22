@@ -14,6 +14,6 @@ module.exports=async(req,res)=>{
   const q=await supabase().from('flash_points_ledger').select('points,event_type,created_at,order_id').eq('user_id',user.id).order('created_at',{ascending:false});
   if(q.error)throw q.error;
   const history=q.data||[];
-  return json(res,200,{points:history.reduce((n,x)=>n+Number(x.points||0),0),history,redemption_enabled:false});
+  return json(res,200,{points:history.reduce((n,x)=>n+Number(x.points||0),0),history,redemption_enabled:true});
  }catch(e){return json(res,500,{error:'Could not load FLASH POINTS. Check the V61 migration.'})}
 };

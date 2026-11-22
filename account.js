@@ -36,6 +36,6 @@ async function loadFlashPoints(){
   const r=await fetch('/api/points',{cache:'no-store'}),d=await r.json();
   if(!r.ok)throw Error(d.error||'Could not load points');
   const points=Number(d.points||0);
-  box.innerHTML=`<div style="font-size:30px;color:#ffb000;font-weight:900">${points.toLocaleString()} ⚡</div><p class="muted">FLASH POINTS BALANCE</p><p class="muted">Every 20 points are worth 5 EGP in future rewards.</p><small class="muted">Points are awarded when orders are completed. Redemption is coming in the next phase.</small>`;
+  box.innerHTML=`<div style="font-size:30px;color:#ffb000;font-weight:900">${points.toLocaleString()} ⚡</div><p class="muted">FLASH POINTS BALANCE</p><p class="muted">Every 20 points = 5 EGP discount.</p><small class="muted">Earned after completed orders. Use at Checkout on eligible products.</small><h3 style="margin-top:20px">Points History</h3>${(d.history||[]).slice(0,20).map(h=>`<div style="padding:9px 0;border-bottom:1px solid #2d3748"><b style="color:${Number(h.points)>=0?'#67d9a0':'#ff7b73'}">${Number(h.points)>0?'+':''}${Number(h.points)} ⚡</b> · ${esc(h.event_type)} · ${new Date(h.created_at).toLocaleDateString()}</div>`).join('')||'<p class="muted">No points activity yet.</p>'}`;
  }catch(e){box.textContent=e.message}
 }

@@ -1,0 +1,13 @@
+FLASH STORE V60 — EMAIL CONFIRMATION FIX
+
+1. تم تعديل api/auth.js لإرسال redirect_to في رابط Supabase signup بدل وضع email_redirect_to داخل JSON.
+2. تم إضافة verify-email.html لعرض رسالة نجاح التأكيد وزر SIGN IN، مع عرض خطأ لو الرابط منتهي.
+3. لم يتم تغيير تصميم الإيميل أو الطلبات أو نظام البوينت.
+
+مهم في Supabase Dashboard > Authentication > URL Configuration:
+- أضف https://flash-store1.vercel.app/verify-email.html إلى Redirect URLs.
+- تأكد أن Site URL هو https://flash-store1.vercel.app
+- احتفظ في قالب Confirm sign up بالرابط {{ .ConfirmationURL }}
+
+اختبار: أنشئ حسابًا تجريبيًا بإيميل جديد، افتح رسالة التحقق، اضغط الزر، ويجب أن تظهر صفحة Email verified successfully ثم SIGN IN.
+لا يمكن التحقق من النتيجة على Supabase الفعلي من داخل الملف وحده.

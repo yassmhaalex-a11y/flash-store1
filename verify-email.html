@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Email Verification | FLASH STORE</title><link rel="stylesheet" href="/style.css"><style>body{background:#090e18;color:#fff;font-family:Arial,sans-serif;min-height:100vh;margin:0}.verify-wrap{max-width:570px;margin:10vh auto;padding:24px}.verify-card{background:#111b2c;border:1px solid #35445b;border-radius:18px;text-align:center;padding:42px 25px}.verify-brand{font-size:30px;font-weight:900}.verify-brand span:first-child{color:#ff6058}.verify-brand span:last-child{color:#ffb000}.verify-tag{font-size:11px;letter-spacing:3px;color:#aab9cd;margin:8px 0 30px}.verify-icon{font-size:52px;margin-bottom:16px}h1{font-size:26px;margin:10px 0;color:#fff}p{color:#cbd5e1;line-height:1.8}.verify-btn{display:inline-block;margin-top:20px;padding:15px 32px;border-radius:8px;background:#ff6058;color:#fff;text-decoration:none;font-weight:bold}.verify-btn:hover{filter:brightness(1.1)}</style></head>
+<body><main class="verify-wrap"><section class="verify-card"><div class="verify-brand"><span>FLASH</span> <span>STORE</span></div><div class="verify-tag">MORE THAN A STORE</div><div id="icon" class="verify-icon">✉️</div><h1 id="heading">Checking verification...</h1><p id="description">Please wait while we check your confirmation link.</p><a id="action" class="verify-btn" href="/account.html" hidden>SIGN IN</a></section></main>
+<script>
+(function(){
+ const hash=new URLSearchParams(location.hash.slice(1));const query=new URLSearchParams(location.search);
+ const error=hash.get('error_description')||query.get('error_description')||hash.get('error')||query.get('error');
+ const token=hash.get('access_token');const type=hash.get('type')||query.get('type');
+ const icon=document.getElementById('icon'),heading=document.getElementById('heading'),description=document.getElementById('description'),action=document.getElementById('action');
+ // Supabase's implicit confirmation flow returns an access token in the URL fragment.
+ // This page intentionally does not store the token: the customer signs in normally.
+ if(error){icon.textContent='⚠️';heading.textContent='Verification link could not be used';description.textContent=error.replace(/\+/g,' ')+'. Please request a new verification email or contact support.';}
+ else if(token && (!type || type==='signup' || type==='email')){icon.textContent='✅';heading.textContent='Email verified successfully!';description.textContent='Your FLASH STORE email has been confirmed. You can now sign in to your account.';}
+ else {icon.textContent='✉️';heading.textContent='Check your email verification';description.textContent='If you already confirmed your email, please sign in. Otherwise open the latest verification link from your inbox.';}
+ action.hidden=false;
+ // Remove sensitive token from browser address bar without triggering navigation.
+ if(location.hash)history.replaceState(null,'',location.pathname);
+})();
+</script></body></html>

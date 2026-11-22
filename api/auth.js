@@ -106,9 +106,10 @@ module.exports=async(req,res)=>{
 
       // Public signup through Supabase Auth: never auto-confirm an email.
       // Email confirmation and its template are managed by Supabase Auth.
-      const signup=await fetch(root+'/auth/v1/signup',{
+      const confirmationRedirect=`${publicOrigin(req)}/verify-email.html`;
+      const signup=await fetch(root+'/auth/v1/signup?redirect_to='+encodeURIComponent(confirmationRedirect),{
         method:'POST',headers:{apikey:env('SUPABASE_ANON_KEY'),'Content-Type':'application/json'},
-        body:JSON.stringify({email,password,data:{full_name:fullName},email_redirect_to:`${publicOrigin(req)}/account.html`})
+        body:JSON.stringify({email,password,data:{full_name:fullName}})
       });
       const created=await signup.json().catch(()=>({}));
       if(!signup.ok)return json(res,signup.status,{error:created.msg||created.error_description||created.message||'Signup failed.'});

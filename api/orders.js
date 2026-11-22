@@ -97,15 +97,6 @@ module.exports=async(req,res)=>{
    const d=await fetch("https://"+host+"/api/discount",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:body.discount_code,items:validated})});
    if(d.ok){const dd=await d.json();discountAmount=Number(dd.amount||0)}
   }
-  const redeemPoints=Number(body.redeem_points||0);
-  if(!Number.isSafeInteger(redeemPoints)||redeemPoints<0||redeemPoints%20!==0)return json(res,400,{error:'Invalid points amount'});
-  if(redeemPoints&&body.discount_code)return json(res,400,{error:'Choose either points or a discount code'});
-  if(redeemPoints){
-   // Server-side quote before creating the order; SQL RPC rechecks balance atomically.
-   const host=req.headers.host;
-   const qr=await fetch('https://'+host+'/api/points-quote',{method:'POST',headers:{'content-type':'application/json',cookie:req.headers.cookie||''},body:JSON.stringify({items:cart})});
-   const quote=await qr.json();if(!qr.ok||redeemPoints>Number(quote.max_points||0))return json(res,409,{error:'FLASH POINTS changed. Please refresh your checkout before paying.'});
-  }
   const payment=await db.from("payment_methods").select("*");if(payment.error)throw payment.error;
   const pm=(payment.data||[]).find(x=>x.name===payment_method&&x.active!==false);if(!pm)return json(res,400,{error:"Please choose a valid payment method."});
 
@@ -127,16 +118,6 @@ module.exports=async(req,res)=>{
     account_email:i.account_email||"",account_password:i.account_password||""
    });
    if(q.error)throw q.error;
-  }
-  if(redeemPoints){
-   const redeemed=await db.rpc('flash_redeem_points',{p_order_id:o.id,p_user_id:user.id,p_points:redeemPoints});
-   if(redeemed.error){
-    // Never confirm an order at an incorrect total. Remove the pending order and items.
-    await db.from('order_items').delete({order_id:'eq.'+o.id});
-    await db.from('orders').delete({id:'eq.'+o.id});
-    return json(res,409,{error:'Could not redeem points. Please refresh checkout and verify your payment amount. '+redeemed.error.message});
-   }
-   o.discount_amount=Number(redeemed.data||0);o.total=Math.max(0,subtotal-o.discount_amount);
   }
   try{await db.from("notifications").insert({type:"order",title:`New order #${o.order_number}`,message:`${full_name} placed an order for ${Number(o.total||0).toLocaleString()} EGP.`,related_id:String(o.id)})}catch(_){}
 
